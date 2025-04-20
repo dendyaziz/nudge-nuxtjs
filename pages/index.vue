@@ -11,12 +11,12 @@
         </div>
       </div>
       <div class="form-control mb-4">
-        <label class="label"><span class="label-text">Nomor WhatsApp</span></label>
+        <label class="label"><span class="label-text">Nomor WhatsApp Penerima</span></label>
         <input v-model="phone" type="text" class="input input-bordered" placeholder="contoh: 08123456789" />
       </div>
       <div class="form-control mb-4">
-        <label class="label"><span class="label-text">Nama Lengkap</span></label>
-        <input v-model="fullName" type="text" class="input input-bordered" placeholder="Nama Lengkap orang tersebut" />
+        <label class="label"><span class="label-text">Nama Lengkap Penerima</span></label>
+        <input v-model="fullName" type="text" class="input input-bordered" placeholder="Nama Lengkap" />
       </div>
       <div class="form-control mb-4">
         <label class="label"><span class="label-text">Pesan</span></label>
