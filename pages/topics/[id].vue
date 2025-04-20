@@ -69,7 +69,7 @@
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useNuxtApp } from '#app';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Timestamp } from 'firebase/firestore';
@@ -77,8 +77,9 @@ import { Timestamp } from 'firebase/firestore';
 const route = useRoute();
 const topic = ref<any>(null);
 const showRaw = ref(false);
-const messageStatus = ref<string>('Loading...');
+const messageStatus = ref<string>('');
 const messageStatusError = ref<string | null>(null);
+const statusCheckInterval = ref<number | null>(null);
 
 // Function to format scheduled time for display
 function formatScheduledTime(timestamp: any): string {
@@ -140,7 +141,7 @@ const previewMessage = computed(() => {
 // Function to fetch message status from the API and update Firebase
 async function fetchMessageStatus(messageId: string) {
   try {
-    messageStatus.value = 'Loading...';
+    messageStatus.value = '';
     messageStatusError.value = null;
 
     // Use query parameters instead of URL parameters
@@ -170,6 +171,39 @@ async function fetchMessageStatus(messageId: string) {
   }
 }
 
+// Function to start polling for message status
+function startStatusPolling() {
+  // Clear any existing interval first
+  stopStatusPolling();
+
+  // Only start polling if we have a messageServerId
+  if (topic.value?.messageServerId) {
+    console.log('Starting status polling for PENDING message');
+    statusCheckInterval.value = window.setInterval(() => {
+      fetchMessageStatus(topic.value.messageServerId);
+    }, 5000); // Check every 5 seconds
+  }
+}
+
+// Function to stop polling
+function stopStatusPolling() {
+  if (statusCheckInterval.value !== null) {
+    console.log('Stopping status polling');
+    window.clearInterval(statusCheckInterval.value);
+    statusCheckInterval.value = null;
+  }
+}
+
+// Watch for changes in messageStatus
+watch(messageStatus, (newStatus) => {
+  if (newStatus === 'PENDING') {
+    startStatusPolling();
+  } else if (statusCheckInterval.value !== null) {
+    // If status is no longer PENDING and we have an active interval, stop it
+    stopStatusPolling();
+  }
+});
+
 onMounted(async () => {
   const firestore = useNuxtApp().$firestore as import('firebase/firestore').Firestore;
   const id = route.params.id as string;
@@ -183,6 +217,11 @@ onMounted(async () => {
     // Fetch message status from the API if messageServerId exists and status is not QUEUED
     if (topic.value.messageServerId && topic.value.status !== 'QUEUED') {
       await fetchMessageStatus(topic.value.messageServerId);
+
+      // If the initial status is PENDING, start polling immediately
+      if (messageStatus.value === 'PENDING') {
+        startStatusPolling();
+      }
     }
 
     // Set up real-time listener for topic updates
@@ -193,8 +232,8 @@ onMounted(async () => {
           const newData = doc.data();
           topic.value = newData;
 
-          // If status changed from QUEUED to SENT, fetch the message status
-          if (newData.status === 'SENT' && newData.messageServerId) {
+          // If status changed to SENT or PENDING, fetch the message status
+          if ((newData.status === 'SENT' || newData.status === 'PENDING') && newData.messageServerId) {
             fetchMessageStatus(newData.messageServerId);
           }
         }
@@ -205,6 +244,8 @@ onMounted(async () => {
       // Clean up the listener when component is unmounted
       onUnmounted(() => {
         unsubscribe();
+        // Also stop any active status polling
+        stopStatusPolling();
       });
     });
   }
