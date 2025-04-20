@@ -15,6 +15,8 @@ export default defineNuxtConfig({
     geminiApiKey: process.env.NUXT_ENV_GEMINI_API_KEY || '',
     whatsappBaseUrl: 'https://whatsapp-bot.hust.sale',
     whatsappClientPhone: process.env.NUXT_ENV_WHATSAPP_CLIENT_PHONE || '',
+    // Secret token for cron job authentication
+    cronSecretToken: process.env.NUXT_ENV_CRON_SECRET_TOKEN || 'default-cron-secret-for-development',
     public: {
       firebase: {
         apiKey: process.env.NUXT_ENV_PUBLIC_FIREBASE_API_KEY || '',
