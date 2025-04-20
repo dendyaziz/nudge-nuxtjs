@@ -4,6 +4,12 @@
     <button v-if="false" class="btn btn-secondary w-full mb-4" @click="testFirestore()">Uji Firestore</button>
     <div v-if="stage === 'input'">
       <h1 class="text-2xl font-bold mb-4">Kirim Pesan Anonim</h1>
+      <div v-if="errorMessage" class="alert alert-error mb-4">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          <span>{{ errorMessage }}</span>
+        </div>
+      </div>
       <div class="form-control mb-4">
         <label class="label"><span class="label-text">Nomor WhatsApp</span></label>
         <input v-model="phone" type="text" class="input input-bordered" placeholder="contoh: 08123456789" />
@@ -23,6 +29,11 @@
     </div>
     <div v-else-if="stage === 'review'">
       <h1 class="text-2xl font-bold mb-2">Tinjau Pesan</h1>
+      <div v-if="errorMessage" class="alert alert-error mb-4">
+        <div>
+          <span>{{ errorMessage }}</span>
+        </div>
+      </div>
 
       <p class="mb-4 text-base-content">Pesan Anda telah disesuaikan untuk mempermudah penyampaian.</p>
 
@@ -90,6 +101,7 @@ const rawMessage = ref('Ketek lu bau biawak');
 const softenData = ref<SoftenData | null>(null);
 const previewMessage = ref('');
 const refineInstruction = ref('');
+const errorMessage = ref('');
 const { user, signInWithGoogle } = useAuth();
 const router = useRouter();
 const nuxtApp = useNuxtApp();
@@ -119,6 +131,16 @@ onMounted(() => {
 });
 
 async function continueToReview() {
+  // Reset error state
+  errorMessage.value = '';
+
+  // Validate phone number
+  const phoneRegex = /^(08|\+628)[0-9]{8,11}$/;
+  if (!phoneRegex.test(phone.value)) {
+    errorMessage.value = 'Nomor telepon tidak valid.';
+    return;
+  }
+
   if (!user.value) {
     localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, stage: 'review' }));
     await signInWithGoogle();
@@ -134,6 +156,7 @@ async function continueToReview() {
       // Handle error case where data is a string
       console.error('Error from API:', res.data);
       previewMessage.value = `Error: ${res.statusMessage}`;
+      errorMessage.value = `Error: ${res.statusMessage}`;
     } else {
       // Handle success case where data is SoftenData
       // Format the preview message, handling empty suggestion
@@ -148,6 +171,7 @@ async function continueToReview() {
   } catch (error) {
     console.error('Error calling API:', error);
     previewMessage.value = 'Terjadi kesalahan saat memproses permintaan Anda.';
+    errorMessage.value = 'Terjadi kesalahan saat memproses permintaan Anda.';
   } finally {
     loading.value = false;
   }
@@ -237,52 +261,61 @@ async function sendMessage() {
     router.push('/login');
     return;
   }
+
+  // Reset error state
+  errorMessage.value = '';
   loading.value = true;
 
-  const info = '> ⓘ Pesan ini hanya sebagai perantara dan dikirim otomatis oleh sistem. Mohon untuk tidak memblokir nomor ini.'
+  try {
+    const info = '> ⓘ Pesan ini hanya sebagai perantara dan dikirim otomatis oleh sistem. Mohon untuk tidak memblokir nomor ini.'
 
-  // Handle empty suggestion
-  let message;
-  if (softenData.value?.suggestion) {
-    message = `${softenData.value.soften_message}\n\n${softenData.value.suggestion}\n\n${softenData.value.disclaimer}\n\n${info}`;
-  } else {
-    message = `${softenData.value?.soften_message}\n\n${softenData.value?.disclaimer}\n\n${info}`;
-  }
-
-  // Create the topic document first
-  const messageId = crypto.randomUUID();
-  await setDoc(doc(firestore, 'topics', messageId), {
-    id: messageId,
-    userId: user.value.uid,
-    phone: phone.value,
-    fullName: fullName.value,
-    rawMessage: rawMessage.value,
-    softenData: JSON.stringify(softenData.value),
-    createdAt: serverTimestamp(),
-    status: 'PENDING'
-  });
-
-  // Then queue the message
-  const res = await $fetch('/api/send-whatsapp', {
-    method: 'POST',
-    body: {
-      phone: phone.value,
-      message,
-      topicId: messageId
+    // Handle empty suggestion
+    let message;
+    if (softenData.value?.suggestion) {
+      message = `${softenData.value.soften_message}\n\n${softenData.value.suggestion}\n\n${softenData.value.disclaimer}\n\n${info}`;
+    } else {
+      message = `${softenData.value?.soften_message}\n\n${softenData.value?.disclaimer}\n\n${info}`;
     }
-  });
 
-  // Update the topic with queue information
-  if ((res as any).queueId) {
-    await updateDoc(doc(firestore, 'topics', messageId), {
-      queueId: (res as any).queueId,
-      scheduledFor: (res as any).scheduledFor,
-      status: (res as any).status
+    // Create the topic document first
+    const messageId = crypto.randomUUID();
+    await setDoc(doc(firestore, 'topics', messageId), {
+      id: messageId,
+      userId: user.value.uid,
+      phone: phone.value,
+      fullName: fullName.value,
+      rawMessage: rawMessage.value,
+      softenData: JSON.stringify(softenData.value),
+      createdAt: serverTimestamp(),
+      status: 'PENDING'
     });
-  }
 
-  loading.value = false;
-  router.push(`/topics/${messageId}`);
+    // Then queue the message
+    const res = await $fetch('/api/send-whatsapp', {
+      method: 'POST',
+      body: {
+        phone: phone.value,
+        message,
+        topicId: messageId
+      }
+    });
+
+    // Update the topic with queue information
+    if ((res as any).queueId) {
+      await updateDoc(doc(firestore, 'topics', messageId), {
+        queueId: (res as any).queueId,
+        scheduledFor: (res as any).scheduledFor,
+        status: (res as any).status
+      });
+    }
+
+    router.push(`/topics/${messageId}`);
+  } catch (error) {
+    console.error('Error sending message:', error);
+    errorMessage.value = 'Terjadi kesalahan saat mengirim pesan. Silakan coba lagi.';
+  } finally {
+    loading.value = false;
+  }
 }
 
 // Debug helper: read and update a doc's `updatedAt` field
