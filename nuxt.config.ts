@@ -5,14 +5,14 @@ export default defineNuxtConfig({
     head: {
       title: 'Nudge - Cara Baru Untuk Peduli',
       meta: [
-        { name: 'description', content: 'Nudge adalah platform inovatif yang memudahkan Anda untuk peduli dan berbagi dengan orang lain melalui pesan WhatsApp yang bermakna. Hubungkan, inspirasi, dan buat perubahan positif hari ini.' },
+        { name: 'description', content: 'Nudge adalah platform inovatif yang memudahkan Anda untuk peduli dan berbagi dengan orang lain melalui pesan untuk membuat perubahan positif hari ini.' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { property: 'og:title', content: 'Nudge - Cara Baru Untuk Peduli' },
-        { property: 'og:description', content: 'Nudge adalah platform inovatif yang memudahkan Anda untuk peduli dan berbagi dengan orang lain melalui pesan WhatsApp yang bermakna. Hubungkan, inspirasi, dan buat perubahan positif hari ini.' },
+        { property: 'og:description', content: 'Nudge adalah platform inovatif yang memudahkan Anda untuk peduli dan berbagi dengan orang lain melalui pesan untuk membuat perubahan positif hari ini.' },
         { property: 'og:url', content: process.env.NUXT_ENV_PUBLIC_APP_URL || 'https://www.nudge.web.id' },
         { property: 'og:type', content: 'website' },
         { name: 'twitter:title', content: 'Nudge - Cara Baru Untuk Peduli' },
-        { name: 'twitter:description', content: 'Nudge adalah platform inovatif yang memudahkan Anda untuk peduli dan berbagi dengan orang lain melalui pesan WhatsApp yang bermakna. Hubungkan, inspirasi, dan buat perubahan positif hari ini.' },
+        { name: 'twitter:description', content: 'Nudge adalah platform inovatif yang memudahkan Anda untuk peduli dan berbagi dengan orang lain melalui pesan untuk membuat perubahan positif hari ini.' },
       ],
       link: [
         { rel: 'canonical', href: process.env.NUXT_ENV_PUBLIC_APP_URL || 'https://www.nudge.web.id' }
