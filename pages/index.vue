@@ -24,10 +24,10 @@
       <div class="p-4 mb-4 border rounded bg-base-200">
         <p v-html="previewMessage" class="whitespace-pre-line"></p>
       </div>
-      <div class="flex justify-between">
+      <div class="flex gap-2">
         <button class="btn btn-outline" :disabled="loading" @click="regenerate">Regenerate</button>
         <button class="btn btn-outline" @click="refine">Refine</button>
-        <button class="btn btn-primary" :disabled="loading" @click="sendMessage">Send</button>
+        <button class="btn btn-primary ml-auto" :disabled="loading" @click="sendMessage">Send</button>
       </div>
     </div>
     <div v-else-if="stage === 'refine'">
