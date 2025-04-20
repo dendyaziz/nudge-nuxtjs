@@ -36,7 +36,7 @@
         </div>
       </div>
 
-      <p class="mb-4 text-base-content">Pesan Anda telah disesuaikan untuk mempermudah penyampaian.</p>
+      <p class="mb-4 text-base-content">Pesan Anda telah disesuaikan untuk memperbaiki penyampaian.</p>
 
       <div class="p-4 mb-4 border rounded bg-base-200">
         <p v-html="previewMessage" class="whitespace-pre-line"></p>
@@ -49,9 +49,15 @@
           <button class="btn btn-outline btn-sm" :class="{'pointer-events-none': loading || loadingRegenerate}" @click="refine">Perbaiki</button>
         </div>
       </div>
+      <div class="form-control mb-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" v-model="termsAccepted" class="checkbox checkbox-primary" />
+          <span class="label-text">Saya menyetujui <NuxtLink to="/terms" class="text-primary hover:underline" target="_blank">Syarat dan Ketentuan</NuxtLink> serta <NuxtLink to="/privacy" class="text-primary hover:underline" target="_blank">Kebijakan Privasi</NuxtLink> Nudge</span>
+        </label>
+      </div>
       <div class="flex gap-2">
         <button class="btn btn-outline" @click="goBackToInput">Kembali</button>
-        <button class="btn btn-primary ml-auto" :class="{'pointer-events-none': loadingRegenerate}" :disabled="loading" @click="sendMessage">Kirim Pesan</button>
+        <button class="btn btn-primary ml-auto" :class="{'pointer-events-none': loadingRegenerate}" :disabled="loading || !termsAccepted" @click="sendMessage">Kirim Pesan</button>
       </div>
     </div>
     <div v-else-if="stage === 'refine'">
@@ -104,6 +110,7 @@ const softenData = ref<SoftenData | null>(null);
 const previewMessage = ref('');
 const refineInstruction = ref('');
 const errorMessage = ref('');
+const termsAccepted = ref(false);
 const { user, signInWithGoogle } = useAuth();
 const router = useRouter();
 const nuxtApp = useNuxtApp();
@@ -127,6 +134,7 @@ onMounted(() => {
       }
     }
     refineInstruction.value = form.refineInstruction;
+    termsAccepted.value = form.termsAccepted || false;
     stage.value = form.stage;
     localStorage.removeItem('nudgeForm');
   }
@@ -144,7 +152,7 @@ async function continueToReview() {
   }
 
   if (!user.value) {
-    localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, stage: 'review' }));
+    localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, termsAccepted: termsAccepted.value, stage: 'review' }));
     await signInWithGoogle();
 
     if (!user)
@@ -209,7 +217,7 @@ async function continueToReview() {
 
 async function regenerate() {
   if (!user.value) {
-    localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, stage: 'review' }));
+    localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, termsAccepted: termsAccepted.value, stage: 'review' }));
     router.push('/login');
     return;
   }
@@ -288,7 +296,7 @@ async function submitRefine() {
 
 async function sendMessage() {
   if (!user.value) {
-    localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, stage: 'review' }));
+    localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, termsAccepted: termsAccepted.value, stage: 'review' }));
     router.push('/login');
     return;
   }
