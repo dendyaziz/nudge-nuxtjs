@@ -21,7 +21,7 @@
     <div v-else-if="stage === 'review'">
       <h1 class="text-2xl font-bold mb-4">Review Softened Message</h1>
       <div class="p-4 mb-4 border rounded bg-base-200">
-        <p v-html="previewMessage"></p>
+        <p v-html="previewMessage" class="whitespace-pre-line"></p>
       </div>
       <div class="flex justify-between">
         <button class="btn btn-outline" :disabled="loading" @click="regenerate">Regenerate</button>
@@ -32,15 +32,15 @@
     <div v-else-if="stage === 'refine'">
       <h1 class="text-2xl font-bold mb-4">Refine Message</h1>
       <div class="p-4 mb-2 border rounded bg-base-200">
-        <p v-html="previewMessage"></p>
+        <p v-html="previewMessage" class="whitespace-pre-line"></p>
       </div>
       <div class="form-control mb-4">
         <label class="label"><span class="label-text">What to add?</span></label>
-        <input v-model="refineText" type="text" class="input input-bordered" placeholder="e.g. be more polite" />
+        <input v-model="refineInstruction" type="text" class="input input-bordered" placeholder="e.g. be more polite" />
       </div>
       <div class="flex justify-between">
         <button class="btn btn-outline" @click="cancelRefine">Cancel</button>
-        <button class="btn btn-primary" :disabled="!refineText || loading" @click="submitRefine">Refine</button>
+        <button class="btn btn-primary" :disabled="!refineInstruction || loading" @click="submitRefine">Refine</button>
       </div>
     </div>
   </div>
@@ -75,7 +75,7 @@ const fullName = ref('Dendy');
 const rawMessage = ref('Ketek lu bau biawak');
 const softenData = ref<SoftenData | null>(null);
 const previewMessage = ref('');
-const refineText = ref('');
+const refineInstruction = ref('');
 const { user } = useAuth();
 const router = useRouter();
 const nuxtApp = useNuxtApp();
@@ -89,8 +89,15 @@ onMounted(() => {
     fullName.value = form.fullName;
     rawMessage.value = form.rawMessage;
     softenData.value = JSON.parse(form.softenData);
-    if (softenData.value) previewMessage.value = `${softenData.value.soften_message}<br><br>${softenData.value.suggestion}`;
-    refineText.value = form.refineText;
+    if (softenData.value) {
+      // Format the preview message, handling empty suggestion
+      if (softenData.value.suggestion) {
+        previewMessage.value = `${softenData.value.soften_message}<br><br>${softenData.value.suggestion}`;
+      } else {
+        previewMessage.value = softenData.value.soften_message;
+      }
+    }
+    refineInstruction.value = form.refineInstruction;
     stage.value = form.stage;
     localStorage.removeItem('nudgeForm');
   }
@@ -106,7 +113,12 @@ async function continueToReview() {
       previewMessage.value = `Error: ${res.statusMessage}`;
     } else {
       // Handle success case where data is SoftenData
-      previewMessage.value = `${res.data.soften_message}<br><br>${res.data.suggestion}`;
+      // Format the preview message, handling empty suggestion
+      if (res.data.suggestion) {
+        previewMessage.value = `${res.data.soften_message}<br><br>${res.data.suggestion}`;
+      } else {
+        previewMessage.value = res.data.soften_message;
+      }
       softenData.value = res.data
       stage.value = 'review';
     }
@@ -129,7 +141,12 @@ async function regenerate() {
       previewMessage.value = `Error: ${res.statusMessage}`;
     } else {
       // Handle success case where data is SoftenData
-      previewMessage.value = `${res.data.soften_message}<br><br>${res.data.suggestion}`;
+      // Format the preview message, handling empty suggestion
+      if (res.data.suggestion) {
+        previewMessage.value = `${res.data.soften_message}<br><br>${res.data.suggestion}`;
+      } else {
+        previewMessage.value = res.data.soften_message;
+      }
       softenData.value = res.data
     }
   } catch (error) {
@@ -141,13 +158,19 @@ async function regenerate() {
 }
 
 function refine() { stage.value = 'refine'; }
-function cancelRefine() { refineText.value = ''; stage.value = 'review'; }
+function cancelRefine() { refineInstruction.value = ''; stage.value = 'review'; }
 
 async function submitRefine() {
   loading.value = true;
-  const combined = `${rawMessage.value}. Additionally, ${refineText.value}`;
   try {
-    const res = await $fetch<Response<SoftenData>>('/api/soften', { method: 'POST', body: { message: rawMessage.value, fullName: fullName.value } });
+    // Use the new refine endpoint with refineInstruction and softenData
+    const res = await $fetch<Response<SoftenData>>('/api/refine', {
+      method: 'POST',
+      body: {
+        refineInstruction: refineInstruction.value,
+        softenData: softenData.value
+      }
+    });
 
     if (typeof res.data === 'string') {
       // Handle error case where data is a string
@@ -155,8 +178,20 @@ async function submitRefine() {
       previewMessage.value = `Error: ${res.statusMessage}`;
     } else {
       // Handle success case where data is SoftenData
-      previewMessage.value = `${res.data.soften_message}<br><br>${res.data.suggestion}`;
-      softenData.value = res.data
+      // Format the preview message, handling empty suggestion
+      if (res.data.suggestion) {
+        previewMessage.value = `${res.data.soften_message}<br><br>${res.data.suggestion}`;
+      } else {
+        previewMessage.value = res.data.soften_message;
+      }
+
+      // Create a new SoftenData object with the refined message, suggestion, and original disclaimer
+      softenData.value = {
+        soften_message: res.data.soften_message,
+        suggestion: res.data.suggestion,
+        disclaimer: softenData.value?.disclaimer || ''
+      };
+
       stage.value = 'review';
     }
   } catch (error) {
@@ -169,13 +204,21 @@ async function submitRefine() {
 
 async function sendMessage() {
   if (!user.value) {
-    localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineText: refineText.value, stage: 'review' }));
+    localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, stage: 'review' }));
     router.push('/login');
     return;
   }
   loading.value = true;
 
-  const message = `${softenData.value?.soften_message}\n\n${softenData.value?.suggestion}\n> ${softenData.value?.disclaimer}`;
+  const info = '> ⓘ Pesan ini hanya sebagai perantara dan dikirim otomatis oleh sistem. Mohon untuk tidak memblokir nomor ini.'
+
+  // Handle empty suggestion
+  let message;
+  if (softenData.value?.suggestion) {
+    message = `${softenData.value.soften_message}\n\n${softenData.value.suggestion}\n\n${softenData.value.disclaimer}\n\n${info}`;
+  } else {
+    message = `${softenData.value?.soften_message}\n\n${softenData.value?.disclaimer}\n\n${info}`;
+  }
 
   const res = await $fetch('/api/send-whatsapp', { method: 'POST', body: { phone: phone.value, message } });
   const { messageId } = res as any;

@@ -59,7 +59,7 @@ You are an expert communicator skilled in crafting indirect, third-person messag
     *   **If** the analysis suggests a solvable problem (like body odor, hygiene habits), generate a *very short* (1 sentence max), gentle, actionable suggestion in the \`Output Language\`.
     *   **If** the original message contains specific suggestions, incorporate these into your response while rephrasing them to be gentler if needed.
     *   **If** no clear suggestion is appropriate or possible, or if the original message is just an insult with no implied problem, make this field an empty string (\`""\`).
-    *   Keep it brief, high-level, non-judgmental, gentle and not offensive. No detailed steps.
+    *   Keep it brief, high-level, non-judgmental, gentle and not offensive. No detailed steps. But make sure it is a complete sentence containing 10-20 words and not just "Take a bath".
 5.  **Generate \`disclaimer\`**:
     *   Combine the following two points into a single string, do not separate by a line break, translated into the \`Output Language\`:
         *   "This message is intended for [Recipient Full Name]."
