@@ -31,6 +31,7 @@
       <h1 class="text-2xl font-bold mb-2">Tinjau Pesan</h1>
       <div v-if="errorMessage" class="alert alert-error mb-4">
         <div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
           <span>{{ errorMessage }}</span>
         </div>
       </div>
@@ -49,6 +50,7 @@
         </div>
       </div>
       <div class="flex gap-2">
+        <button class="btn btn-outline" @click="goBackToInput">Kembali</button>
         <button class="btn btn-primary ml-auto" :class="{'pointer-events-none': loadingRegenerate}" :disabled="loading" @click="sendMessage">Kirim Pesan</button>
       </div>
     </div>
@@ -151,6 +153,28 @@ async function continueToReview() {
 
   loading.value = true;
   try {
+    // First validate message limits
+    const limitsRes = await $fetch('/api/validate-limits', {
+      method: 'POST',
+      body: {
+        userId: user.value.uid,
+        phone: phone.value
+      }
+    });
+
+    // Check if user has reached message limit
+    if (limitsRes.userLimitReached) {
+      errorMessage.value = 'Batas mengirim pesan tercapai.';
+      return;
+    }
+
+    // Check if phone has reached message limit
+    if (limitsRes.phoneLimitReached) {
+      errorMessage.value = 'Pengiriman ke nomor ini dibatasi.';
+      return;
+    }
+
+    // If limits are not reached, proceed with softening the message
     const res = await $fetch<Response<SoftenData>>('/api/soften', { method: 'POST', body: { message: rawMessage.value, fullName: fullName.value } });
     if (typeof res.data === 'string') {
       // Handle error case where data is a string
@@ -168,10 +192,16 @@ async function continueToReview() {
       softenData.value = res.data
       stage.value = 'review';
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error calling API:', error);
-    previewMessage.value = 'Terjadi kesalahan saat memproses permintaan Anda.';
-    errorMessage.value = 'Terjadi kesalahan saat memproses permintaan Anda.';
+
+    // Check if the error has a response with a status message
+    if (error.response && error.response._data && error.response._data.statusMessage) {
+      errorMessage.value = error.response._data.statusMessage;
+    } else {
+      previewMessage.value = 'Terjadi kesalahan saat memproses permintaan Anda.';
+      errorMessage.value = 'Terjadi kesalahan saat memproses permintaan Anda.';
+    }
   } finally {
     loading.value = false;
   }
@@ -212,6 +242,7 @@ async function regenerate() {
 
 function refine() { stage.value = 'refine'; }
 function cancelRefine() { refineInstruction.value = ''; stage.value = 'review'; }
+function goBackToInput() { stage.value = 'input'; }
 
 async function submitRefine() {
   loading.value = true;
@@ -267,7 +298,7 @@ async function sendMessage() {
   loading.value = true;
 
   try {
-    const info = '> ⓘ Pesan ini hanya sebagai perantara dan dikirim otomatis oleh sistem. Mohon untuk tidak memblokir nomor ini.'
+    const info = '> ⓘ Pesan ini hanya sebagai perantara dan dikirim otomatis oleh sistem. Balas "Stop" jika Anda tidak berkanan menerima pesan lainnya.'
 
     // Handle empty suggestion
     let message;
@@ -310,9 +341,15 @@ async function sendMessage() {
     }
 
     router.push(`/topics/${messageId}`);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending message:', error);
-    errorMessage.value = 'Terjadi kesalahan saat mengirim pesan. Silakan coba lagi.';
+
+    // Check if the error has a response with a status message
+    if (error.response && error.response._data && error.response._data.statusMessage) {
+      errorMessage.value = error.response._data.statusMessage;
+    } else {
+      errorMessage.value = 'Terjadi kesalahan saat mengirim pesan. Silakan coba lagi.';
+    }
   } finally {
     loading.value = false;
   }

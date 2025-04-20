@@ -1,6 +1,4 @@
 import { defineEventHandler, readBody, createError, sendError } from 'h3';
-import axios from 'axios';
-import { addToQueue } from '../utils/queue';
 import { initializeFirebaseAdmin } from '../utils/firestore-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 
@@ -79,11 +77,12 @@ const checkPhoneMessageLimit = async (phone: string) => {
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const { phone, message, topicId } = body;
-  if (!phone || !message || !topicId) {
+  const { userId, phone } = body;
+
+  if (!userId || !phone) {
     return sendError(event, createError({
       statusCode: 400,
-      statusMessage: 'Phone, message, and topicId are required'
+      statusMessage: 'UserId and phone are required'
     }));
   }
 
@@ -97,59 +96,22 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // Get the topic document to retrieve the user ID
-    const db = initializeFirebaseAdmin();
-    const topicDoc = await db.collection('topics').doc(topicId).get();
-
-    if (!topicDoc.exists) {
-      return sendError(event, createError({
-        statusCode: 404,
-        statusMessage: 'Topic not found'
-      }));
-    }
-
-    const topicData = topicDoc.data();
-    const userId = topicData?.userId;
-
-    if (!userId) {
-      return sendError(event, createError({
-        statusCode: 400,
-        statusMessage: 'User ID not found in topic'
-      }));
-    }
-
     // Check if user has reached message limit
     const userLimitReached = await checkUserMessageLimit(userId);
-    if (userLimitReached) {
-      return sendError(event, createError({
-        statusCode: 429,
-        statusMessage: `Batas mengirim pesan tercapai.`
-      }));
-    }
 
     // Check if phone has reached message limit
     const phoneLimitReached = await checkPhoneMessageLimit(standardizedPhone);
-    if (phoneLimitReached) {
-      return sendError(event, createError({
-        statusCode: 429,
-        statusMessage: `Pengiriman ke nomor ini dibatasi.`
-      }));
-    }
-
-    // Add message to queue instead of sending directly
-    const queueResult = await addToQueue(topicId, standardizedPhone, message);
 
     return {
-      messageId: topicId,
-      queueId: queueResult.queueId,
-      scheduledFor: queueResult.scheduledFor,
-      status: 'QUEUED'
+      userLimitReached,
+      phoneLimitReached,
+      standardizedPhone
     };
   } catch (err: any) {
-    console.error('Error adding message to queue:', err);
+    console.error('Error checking limits:', err);
     return sendError(event, createError({
       statusCode: 500,
-      statusMessage: 'Failed to queue message',
+      statusMessage: 'Failed to check limits',
       data: err.message
     }));
   }
