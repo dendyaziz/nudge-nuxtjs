@@ -1,13 +1,20 @@
 import { defineEventHandler, readBody, createError, sendError } from 'h3';
 import axios from 'axios';
+// Assuming useRuntimeConfig is correctly set up elsewhere in your Nuxt/Nitro project
+// import { useRuntimeConfig } from '#imports'; // Or appropriate import path
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const { message, fullName } = body;
+
   if (!message || !fullName) {
-    return sendError(event, createError({ statusCode: 400, statusMessage: 'Missing message or fullName' }));
+    return sendError(event, createError({
+      statusCode: 400,
+      statusMessage: 'Missing message, fullName'
+    }));
   }
 
+  // --- Input Validation (Keep as is) ---
   const lower = message.toLowerCase();
   const marketingWords = ['buy', 'sale', 'discount', 'promo', 'subscribe'];
   const sexualWords = ['sex', 'nude', 'nsfw', 'porn'];
@@ -18,61 +25,128 @@ export default defineEventHandler(async (event) => {
     return sendError(event, createError({ statusCode: 400, statusMessage: 'Sexual content is not allowed' }));
   }
 
+  // --- Use your runtime config ---
   const config = useRuntimeConfig();
   const apiKey = config.geminiApiKey;
-  // Use a supported chat model (e.g., Google Generative Language API chat-bison-001)
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${apiKey}`;
-  const prompt = `# Prompt: Gentle Third-Person Sensitive Message Generator (Specific Language & Structure)
+  if (!apiKey) {
+    console.error("API Key not configured");
+    return sendError(event, createError({ statusCode: 500, statusMessage: 'Server configuration error: API Key missing' }));
+  }
 
-You are an expert communicator skilled in crafting indirect, third-person messages for highly sensitive situations. Your task is to take a potentially blunt, harsh, or offensive message about a sensitive personal issue and transform it into a very gentle, indirect, third-person notification, suitable for delivery via text or anonymous message, **strictly adhering to the specified output language**.
+  // Use the correct API endpoint for Gemini Flash
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+
+  const prompt = `# Prompt: Gentle Sensitive Message Generator (Structured JSON Output)
+
+You are an expert communicator skilled in crafting indirect, third-person messages for highly sensitive situations. Your task is to take a potentially blunt, harsh, or offensive message, analyze it, and generate a structured JSON output containing a softened version, a brief suggestion (if applicable), and a disclaimer, all in the specified language and suitable for messaging apps like WhatsApp (using '\\n' for line breaks).
 
 ---
 
 ## Instructions:
 
-1.  **Analyze**: Read the \`Original Message\` provided below. Identify the core sensitive concern (e.g., body odor, appearance issue, behavioral feedback). Understand its **nuance** (e.g., is it mild, strong, specific?).
-2.  **Identify Recipient**: Note the \`Recipient Full Name\`.
-3.  **Determine Language**: Note the explicitly provided \`Output Language\`. **All** generated text in the final output **must** be in this language.
-4.  **Craft Message**: Construct the message *exactly* following this structure and using the specified \`Output Language\`:
-    *   **Start with the topic**: Begin with a phrase like "Someone who knows you wanted to gently let you know about a possibility regarding..." or a similar culturally appropriate opening in the target language.
-    *   **State the issue gently**: Based on your analysis (Step 1), state the issue *very* indirectly and gently, reflecting the nuance if possible. **Do not simply copy the examples below.** *Adapt* phrasing like "a potential matter related to personal scent," "a possible hygiene concern," or "an observation regarding underarm freshness" into the \`Output Language\`. Avoid blunt terms.
-    *   **Mention the recipient**: Follow with "This message is intended for [Recipient Full Name]." (Translate "This message is intended for" into the \`Output Language\`).
-    *   **Include disclaimer**: Add "If this message has reached the wrong person, please disregard it entirely." (Translate this disclaimer into the \`Output Language\`).
-5.  **Output Only**: Ensure the output contains ONLY the rephrased message in the specified third-person format and \`Output Language\`. No extra text, formatting, or explanations.
-6.  **Safety**: Do not include any harmful, offensive, marketing, or sexual content in the *output*.
+1.  **Analyze**: Read the \`Original Message\`. Identify the core sensitive concern (e.g., body odor, appearance, behavior) and its nuance. Note the \`Recipient Full Name\`.
+2.  **Determine Language**: Identify the \`Output Language\`. **All** text generated for the JSON fields **must** be in this language.
+3.  **Generate \`soften_message\`**:
+    *   Craft the main gentle message based on the analysis.
+    *   Do not need to mention the Recipient's name.
+    *   Use friendly term as an alternative to "you" in language like Indonesian, Spanish, etc. (e.g., "Kamu").
+    *   Do not explicitly mention that the sender want to say something "gently" as a part of the message, because it is not natural.
+    *   Start indirectly: "Someone who knows you wanted to gently let you know about a possibility regarding..." (or similar culturally appropriate opening in the \`Output Language\`).
+    *   State the issue *very* gently and indirectly in the \`Output Language\` (e.g., "a potential matter related to personal scent," "a possible hygiene concern"). Avoid blunt terms.
+    *   Use \`\\n\` for line breaks where it improves readability for a messaging app.
+4.  **Generate \`suggestion\`**:
+    *   **If** the analysis suggests a solvable problem (like body odor, hygiene habits), generate a *very short* (1 sentence max), gentle, actionable suggestion in the \`Output Language\`. Examples (translate appropriately): "Perhaps exploring specific hygiene products could be helpful.", "Maybe looking into specialized deodorants might offer solutions.", "There are many resources online about managing personal scent."
+    *   **If** no clear suggestion is appropriate or possible, or if the original message is just an insult with no implied problem, make this field an empty string (\`""\`).
+    *   Keep it brief, high-level, and non-judgmental. No detailed steps.
+5.  **Generate \`disclaimer\`**:
+    *   Combine the following two points into a single string, do not separate by a line break, translated into the \`Output Language\`:
+        *   "This message is intended for [Recipient Full Name]."
+        *   "If this message has reached the wrong person, please disregard it entirely."
+6.  **Format Output**: Structure the final output *strictly* as a valid JSON object string with the exact keys \`soften_message\`, \`suggestion\`, and \`disclaimer\`, containing the texts generated in the previous steps. Ensure the JSON syntax is correct (e.g., proper quotes, commas).
+7.  **Safety**: Do not include any harmful, offensive, marketing, or sexual content in the *output fields*.
 
 ---
 
 ## Input Fields:
 
-Recipient Full Name: ${fullName}
-Original Message: ${message}
-Output Language: The language used on Original Message // e.g., "Indonesian", "English", "Spanish"
+Recipient Full Name: \${fullName}
+Original Message: \${message}
+Output Language: The language used in the "Original Message" // e.g., "Indonesian", "English", "Spanish"
 
 ---
 
-## Expected Output Format:
+## Expected Output Format (Must be a valid JSON string):
 
-[Generated message in the specified Output Language, following the structure in Instruction 4]
-`;
+\`\`\`json
+{
+  "soften_message": "[Generated gentle message text in Output Language, using \\\\n for line breaks]",
+  "suggestion": "[Generated brief suggestion in Output Language, or empty string \\"\\", using \\\\n if needed]",
+  "disclaimer": "[Combined 'intended for' and 'wrong person' text in Output Language, separated by \\\\n]"
+}
+\`\`\`
+`; // End of prompt string
+
+  // Ensure placeholders are correctly replaced.
+  const finalPrompt = prompt
+    .replace('${fullName}', fullName)
+    .replace('${message}', message); // Pass the language
 
   try {
     const response = await axios.post(url, {
-      // Use chat-style prompt as required by the generateMessage endpoint
       contents: [
-        { role: 'user', parts: [{ text: prompt }] },
+        { role: 'user', parts: [{ text: finalPrompt }] },
+        // Add a model role instruction to ensure JSON output
+        { role: 'model', parts: [{ text: '```json\n' }] } // Guide the model to start with JSON
       ],
       generationConfig: {
-        temperature: 0.8,
-        // candidateCount defaults to 1 if omitted, but can be specified
-        candidateCount: 1
+        temperature: 0.7, // Adjusted slightly for more consistent JSON output
+        // Ensure the model outputs JSON
+        responseMimeType: "application/json", // ** Crucial for Gemini JSON mode **
+        // candidateCount: 1 // Usually defaults to 1
       }
     });
 
-    // Extract the softened text from the chat candidate message
-    const softened = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    return { softened };
+    // --- MODIFIED: Expect and Parse JSON Output ---
+    const candidate = response.data.candidates?.[0];
+    if (!candidate || !candidate.content || !candidate.content.parts || !candidate.content.parts[0]) {
+      console.error("Invalid API response structure:", response.data);
+      return sendError(event, createError({ statusCode: 500, statusMessage: 'AI API error: Unexpected response structure' }));
+    }
+
+    let jsonString = candidate.content.parts[0].text;
+
+    // Clean potential markdown ```json ... ``` fences if responseMimeType didn't enforce perfectly
+    jsonString = jsonString.trim().replace(/^```json\s*/, '').replace(/\s*```$/, '');
+
+    try {
+      const result = JSON.parse(jsonString);
+
+      // Validate the structure of the parsed object
+      if (typeof result.soften_message !== 'string' ||
+        typeof result.suggestion !== 'string' ||
+        typeof result.disclaimer !== 'string') {
+        console.error("Parsed JSON has incorrect structure:", result);
+        return sendError(event, createError({ statusCode: 500, statusMessage: 'AI API error: Incorrect JSON structure received' }));
+      }
+
+      // Return the structured object
+      return {
+        data: {
+          soften_message: result.soften_message,
+          suggestion: result.suggestion,
+          disclaimer: result.disclaimer
+        },
+        statusCode: 200,
+        statusMessage: 'Success'
+      };
+
+    } catch (parseError: any) {
+      console.error("Failed to parse JSON response from AI:", jsonString, parseError);
+      return sendError(event, createError({ statusCode: 500, statusMessage: 'AI API error: Failed to parse response JSON', data: parseError.message }));
+    }
+
   } catch (err: any) {
+    console.error("Error calling AI API:", err.response?.data || err.message);
     return sendError(event, createError({ statusCode: 500, statusMessage: 'AI API error', data: err.response?.data || err.message }));
   }
 });

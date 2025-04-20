@@ -21,7 +21,7 @@
     <div v-else-if="stage === 'review'">
       <h1 class="text-2xl font-bold mb-4">Review Softened Message</h1>
       <div class="p-4 mb-4 border rounded bg-base-200">
-        <p>{{ softenedMessage }}</p>
+        <p v-html="previewMessage"></p>
       </div>
       <div class="flex justify-between">
         <button class="btn btn-outline" :disabled="loading" @click="regenerate">Regenerate</button>
@@ -32,7 +32,7 @@
     <div v-else-if="stage === 'refine'">
       <h1 class="text-2xl font-bold mb-4">Refine Message</h1>
       <div class="p-4 mb-2 border rounded bg-base-200">
-        <p>{{ softenedMessage }}</p>
+        <p v-html="previewMessage"></p>
       </div>
       <div class="form-control mb-4">
         <label class="label"><span class="label-text">What to add?</span></label>
@@ -53,12 +53,28 @@ import { useRouter } from 'vue-router';
 import { useNuxtApp } from '#app';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
+// Define the type for the API response
+interface Response<T> {
+  statusCode: number;
+  statusMessage: string;
+  stack?: any[];
+  data: T | string;
+}
+
+// Define the type for the soften data
+interface SoftenData {
+  soften_message: string;
+  suggestion: string;
+  disclaimer: string;
+}
+
 const stage = ref<'input'|'review'|'refine'>('input');
 const loading = ref(false);
 const phone = ref('6285155454174');
 const fullName = ref('Dendy');
 const rawMessage = ref('Ketek lu bau biawak');
-const softenedMessage = ref('');
+const softenData = ref<SoftenData | null>(null);
+const previewMessage = ref('');
 const refineText = ref('');
 const { user } = useAuth();
 const router = useRouter();
@@ -72,7 +88,8 @@ onMounted(() => {
     phone.value = form.phone;
     fullName.value = form.fullName;
     rawMessage.value = form.rawMessage;
-    softenedMessage.value = form.softenedMessage;
+    softenData.value = JSON.parse(form.softenData);
+    if (softenData.value) previewMessage.value = `${softenData.value.soften_message}<br><br>${softenData.value.suggestion}`;
     refineText.value = form.refineText;
     stage.value = form.stage;
     localStorage.removeItem('nudgeForm');
@@ -81,17 +98,46 @@ onMounted(() => {
 
 async function continueToReview() {
   loading.value = true;
-  const res = await $fetch('/api/soften', { method: 'POST', body: { message: rawMessage.value, fullName: fullName.value } });
-  softenedMessage.value = (res as any).softened;
-  stage.value = 'review';
-  loading.value = false;
+  try {
+    const res = await $fetch<Response<SoftenData>>('/api/soften', { method: 'POST', body: { message: rawMessage.value, fullName: fullName.value } });
+    if (typeof res.data === 'string') {
+      // Handle error case where data is a string
+      console.error('Error from API:', res.data);
+      previewMessage.value = `Error: ${res.statusMessage}`;
+    } else {
+      // Handle success case where data is SoftenData
+      previewMessage.value = `${res.data.soften_message}<br><br>${res.data.suggestion}`;
+      softenData.value = res.data
+      stage.value = 'review';
+    }
+  } catch (error) {
+    console.error('Error calling API:', error);
+    previewMessage.value = 'An error occurred while processing your request.';
+  } finally {
+    loading.value = false;
+  }
 }
 
 async function regenerate() {
   loading.value = true;
-  const res = await $fetch('/api/soften', { method: 'POST', body: { message: rawMessage.value, fullName: fullName.value } });
-  softenedMessage.value = (res as any).softened;
-  loading.value = false;
+  try {
+    const res = await $fetch<Response<SoftenData>>('/api/soften', { method: 'POST', body: { message: rawMessage.value, fullName: fullName.value } });
+
+    if (typeof res.data === 'string') {
+      // Handle error case where data is a string
+      console.error('Error from API:', res.data);
+      previewMessage.value = `Error: ${res.statusMessage}`;
+    } else {
+      // Handle success case where data is SoftenData
+      previewMessage.value = `${res.data.soften_message}<br><br>${res.data.suggestion}`;
+      softenData.value = res.data
+    }
+  } catch (error) {
+    console.error('Error calling API:', error);
+    previewMessage.value = 'An error occurred while processing your request.';
+  } finally {
+    loading.value = false;
+  }
 }
 
 function refine() { stage.value = 'refine'; }
@@ -100,22 +146,40 @@ function cancelRefine() { refineText.value = ''; stage.value = 'review'; }
 async function submitRefine() {
   loading.value = true;
   const combined = `${rawMessage.value}. Additionally, ${refineText.value}`;
-  const res = await $fetch('/api/soften', { method: 'POST', body: { message: combined, fullName: fullName.value } });
-  softenedMessage.value = (res as any).softened;
-  stage.value = 'review';
-  loading.value = false;
+  try {
+    const res = await $fetch<Response<SoftenData>>('/api/soften', { method: 'POST', body: { message: rawMessage.value, fullName: fullName.value } });
+
+    if (typeof res.data === 'string') {
+      // Handle error case where data is a string
+      console.error('Error from API:', res.data);
+      previewMessage.value = `Error: ${res.statusMessage}`;
+    } else {
+      // Handle success case where data is SoftenData
+      previewMessage.value = `${res.data.soften_message}<br><br>${res.data.suggestion}`;
+      softenData.value = res.data
+      stage.value = 'review';
+    }
+  } catch (error) {
+    console.error('Error calling API:', error);
+    previewMessage.value = 'An error occurred while processing your request.';
+  } finally {
+    loading.value = false;
+  }
 }
 
 async function sendMessage() {
   if (!user.value) {
-    localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenedMessage: softenedMessage.value, refineText: refineText.value, stage: 'review' }));
+    localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineText: refineText.value, stage: 'review' }));
     router.push('/login');
     return;
   }
   loading.value = true;
-  const res = await $fetch('/api/send-whatsapp', { method: 'POST', body: { phone: phone.value, message: softenedMessage.value } });
+
+  const message = `${softenData.value?.soften_message}\n\n${softenData.value?.suggestion}\n> ${softenData.value?.disclaimer}`;
+
+  const res = await $fetch('/api/send-whatsapp', { method: 'POST', body: { phone: phone.value, message } });
   const { messageId } = res as any;
-  await setDoc(doc(firestore, 'topics', messageId), { id: messageId, userId: user.value.uid, phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenedMessage: softenedMessage.value, messageServerId: (res as any).messageServerId, createdAt: serverTimestamp(), status: 'PENDING' });
+  await setDoc(doc(firestore, 'topics', messageId), { id: messageId, userId: user.value.uid, phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), messageServerId: (res as any).messageServerId, createdAt: serverTimestamp(), status: 'PENDING' });
   loading.value = false;
   router.push(`/topics/${messageId}`);
 }
