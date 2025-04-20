@@ -340,6 +340,10 @@ async function sendMessage() {
     return;
   }
 
+  // Reset error state
+  errorMessage.value = '';
+  loading.value = true;
+
   // First validate message limits
   const limitsRes = await $fetch('/api/validate-limits', {
     method: 'POST',
@@ -351,20 +355,17 @@ async function sendMessage() {
 
   // Check if user has reached message limit
   if (limitsRes.userLimitReached) {
-    console.log('validate limits', limitsRes)
     errorMessage.value = 'Batas mengirim pesan tercapai.';
+    loading.value = false;
     return;
   }
 
   // Check if phone has reached message limit
   if (limitsRes.phoneLimitReached) {
     errorMessage.value = 'Pengiriman ke nomor ini dibatasi.';
+    loading.value = false;
     return;
   }
-
-  // Reset error state
-  errorMessage.value = '';
-  loading.value = true;
 
   try {
     const info = '> ⓘ Pesan ini hanya sebagai perantara dan dikirim otomatis oleh sistem. Balas "Stop" jika Anda tidak berkanan menerima pesan lainnya.'
