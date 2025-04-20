@@ -2,7 +2,7 @@
   <div class="max-w-md mx-auto p-4">
     <h1 class="text-2xl font-bold mb-2">Pesan untuk {{ topic?.fullName }}</h1>
 
-    <p class="mb-4 text-base-content">WhatsApp: {{ topic?.phone }}</p>
+    <p class="mb-4 text-base-content">Nomor WhatsApp: +{{ topic?.phone }}</p>
 
     <div class="p-4 mb-4 border rounded bg-base-200">
       <div class="flex flex-col gap-2 mb-6">
