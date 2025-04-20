@@ -1,5 +1,7 @@
 <template>
   <div class="max-w-md mx-auto p-4">
+    <!-- Debug button: test Firestore connectivity -->
+    <button class="btn btn-secondary w-full mb-4" @click="testFirestore()">Test Firestore</button>
     <div v-if="stage === 'input'">
       <h1 class="text-2xl font-bold mb-4">Send a New Nudge</h1>
       <div class="form-control mb-4">
@@ -51,8 +53,8 @@
 import { ref, onMounted } from 'vue';
 import { useAuth } from '~/composables/useAuth';
 import { useRouter } from 'vue-router';
-import { useNuxtApp } from '#app';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useNuxtApp, useRuntimeConfig } from '#app';
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp, enableNetwork } from 'firebase/firestore';
 
 // Define the type for the API response
 interface Response<T> {
@@ -80,6 +82,7 @@ const refineInstruction = ref('');
 const { user, signInWithGoogle } = useAuth();
 const router = useRouter();
 const nuxtApp = useNuxtApp();
+const runtimeConfig = useRuntimeConfig();
 const firestore = nuxtApp.$firestore as import('firebase/firestore').Firestore;
 
 onMounted(() => {
@@ -240,5 +243,25 @@ async function sendMessage() {
   await setDoc(doc(firestore, 'topics', messageId), { id: messageId, userId: user.value.uid, phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), messageServerId: (res as any).messageServerId, createdAt: serverTimestamp(), status: 'PENDING' });
   loading.value = false;
   router.push(`/topics/${messageId}`);
+}
+
+// Debug helper: read and update a doc's `updatedAt` field
+async function testFirestore() {
+  const id = window.prompt('Enter a topics doc ID to test:');
+  if (!id) return;
+  try {
+    console.log('[testFirestore] Firestore instance:', firestore);
+    console.log('[testFirestore] runtimeConfig.public.firebase:', runtimeConfig.public.firebase);
+    await enableNetwork(firestore);
+    console.log('[testFirestore] Network enabled.');
+    const ref = doc(firestore, 'topics', id);
+    console.log('[testFirestore] Document ref:', ref);
+    const snap = await getDoc(ref);
+    console.log('[testFirestore] Document snapshot exists:', snap.exists(), 'data:', snap.data());
+    await updateDoc(ref, { updatedAt: serverTimestamp() });
+    console.log('[testFirestore] updated updatedAt field to serverTimestamp()');
+  } catch (e) {
+    console.error('[testFirestore] Firestore test failed:', e);
+  }
 }
 </script>
