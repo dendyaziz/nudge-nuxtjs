@@ -9,7 +9,7 @@
         <strong>Status:</strong>
         <span v-if="messageStatus === 'DELIVERED'" class="relative group inline-flex items-center gap-1">
         Terkirim
-        <div class="tooltip" data-tip="Penerima mungkin telah membaca pesan, tetapi mereka mematikan status 'Dibaca' pada WhatsApp di ponsel mereka.">
+        <div v-if="false" class="tooltip" data-tip="Penerima mungkin telah membaca pesan, tetapi mereka mematikan status 'Dibaca' pada WhatsApp di ponsel mereka.">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 -960 960 960"
