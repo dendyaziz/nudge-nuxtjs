@@ -157,12 +157,9 @@ async function fetchMessageStatus(messageId: string) {
         const firestore = useNuxtApp().$firestore as import('firebase/firestore').Firestore;
         const docRef = doc(firestore, 'topics', topic.value.id);
         await updateDoc(docRef, { status: response.data.status });
-        console.log('Updated topic status in Firebase:', response.data.status);
 
         if (response.data.status === 'PENDING') {
-          console.log('starting timeout')
           setTimeout(async () => {
-            console.log('execute timeout')
             await fetchMessageStatus(messageId)
           }, 1000)
         }
@@ -186,7 +183,6 @@ function startStatusPolling() {
 
   // Only start polling if we have a messageServerId
   if (topic.value?.messageServerId) {
-    console.log('Starting status polling for PENDING message');
     statusCheckInterval.value = window.setInterval(() => {
       fetchMessageStatus(topic.value.messageServerId);
     }, 5000); // Check every 5 seconds
@@ -196,7 +192,6 @@ function startStatusPolling() {
 // Function to stop polling
 function stopStatusPolling() {
   if (statusCheckInterval.value !== null) {
-    console.log('Stopping status polling');
     window.clearInterval(statusCheckInterval.value);
     statusCheckInterval.value = null;
   }
@@ -239,8 +234,6 @@ onMounted(async () => {
         if (doc.exists()) {
           const newData = doc.data();
           topic.value = newData;
-
-          console.log('newData.status', newData.status)
 
           // If status changed to SENT or PENDING, fetch the message status
           if ((newData.status === 'PENDING') && newData.messageServerId) {
