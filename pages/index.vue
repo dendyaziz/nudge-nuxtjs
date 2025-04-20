@@ -64,6 +64,7 @@ import { useAuth } from '~/composables/useAuth';
 import { useRouter } from 'vue-router';
 import { useNuxtApp, useRuntimeConfig } from '#app';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp, enableNetwork } from 'firebase/firestore';
+import {createError, sendError} from "h3";
 
 // Define the type for the API response
 interface Response<T> {
