@@ -10,6 +10,8 @@ export default defineNuxtConfig({
       messagingSenderId: process.env.NUXT_ENV_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
       appId: process.env.NUXT_ENV_PUBLIC_FIREBASE_APP_ID || ''
     },
+    // Firebase Admin SDK credentials for server-side operations
+    firebaseAdminCredentials: process.env.NUXT_ENV_FIREBASE_ADMIN_CREDENTIALS || '',
     geminiApiKey: process.env.NUXT_ENV_GEMINI_API_KEY || '',
     whatsappBaseUrl: 'https://whatsapp-bot.hust.sale',
     whatsappClientPhone: process.env.NUXT_ENV_WHATSAPP_CLIENT_PHONE || '',

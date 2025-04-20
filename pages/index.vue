@@ -248,9 +248,38 @@ async function sendMessage() {
     message = `${softenData.value?.soften_message}\n\n${softenData.value?.disclaimer}\n\n${info}`;
   }
 
-  const res = await $fetch('/api/send-whatsapp', { method: 'POST', body: { phone: phone.value, message } });
-  const { messageId } = res as any;
-  await setDoc(doc(firestore, 'topics', messageId), { id: messageId, userId: user.value.uid, phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), messageServerId: (res as any).messageServerId, createdAt: serverTimestamp(), status: 'PENDING' });
+  // Create the topic document first
+  const messageId = crypto.randomUUID();
+  await setDoc(doc(firestore, 'topics', messageId), {
+    id: messageId,
+    userId: user.value.uid,
+    phone: phone.value,
+    fullName: fullName.value,
+    rawMessage: rawMessage.value,
+    softenData: JSON.stringify(softenData.value),
+    createdAt: serverTimestamp(),
+    status: 'PENDING'
+  });
+
+  // Then queue the message
+  const res = await $fetch('/api/send-whatsapp', {
+    method: 'POST',
+    body: {
+      phone: phone.value,
+      message,
+      topicId: messageId
+    }
+  });
+
+  // Update the topic with queue information
+  if ((res as any).queueId) {
+    await updateDoc(doc(firestore, 'topics', messageId), {
+      queueId: (res as any).queueId,
+      scheduledFor: (res as any).scheduledFor,
+      status: (res as any).status
+    });
+  }
+
   loading.value = false;
   router.push(`/topics/${messageId}`);
 }
