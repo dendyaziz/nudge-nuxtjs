@@ -76,7 +76,7 @@ const rawMessage = ref('Ketek lu bau biawak');
 const softenData = ref<SoftenData | null>(null);
 const previewMessage = ref('');
 const refineInstruction = ref('');
-const { user } = useAuth();
+const { user, signInWithGoogle } = useAuth();
 const router = useRouter();
 const nuxtApp = useNuxtApp();
 const firestore = nuxtApp.$firestore as import('firebase/firestore').Firestore;
@@ -104,6 +104,13 @@ onMounted(() => {
 });
 
 async function continueToReview() {
+  if (!user.value) {
+    localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, stage: 'review' }));
+    await signInWithGoogle();
+    navigateTo('/', { external: true });
+    return;
+  }
+
   loading.value = true;
   try {
     const res = await $fetch<Response<SoftenData>>('/api/soften', { method: 'POST', body: { message: rawMessage.value, fullName: fullName.value } });
@@ -131,6 +138,12 @@ async function continueToReview() {
 }
 
 async function regenerate() {
+  if (!user.value) {
+    localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, stage: 'review' }));
+    router.push('/login');
+    return;
+  }
+
   loading.value = true;
   try {
     const res = await $fetch<Response<SoftenData>>('/api/soften', { method: 'POST', body: { message: rawMessage.value, fullName: fullName.value } });

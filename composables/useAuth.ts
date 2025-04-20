@@ -8,6 +8,7 @@ export function useAuth() {
   const user = useState<User | null>('user', () => null);
 
   onAuthStateChanged(auth, (u) => {
+    console.log('updated 1', u)
     user.value = u;
   });
 
