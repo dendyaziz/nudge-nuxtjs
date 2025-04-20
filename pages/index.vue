@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-md mx-auto p-4">
     <!-- Debug button: test Firestore connectivity -->
-    <button class="btn btn-secondary w-full mb-4" @click="testFirestore()">Test Firestore</button>
+    <button v-if="false" class="btn btn-secondary w-full mb-4" @click="testFirestore()">Test Firestore</button>
     <div v-if="stage === 'input'">
       <h1 class="text-2xl font-bold mb-4">Send a New Nudge</h1>
       <div class="form-control mb-4">
