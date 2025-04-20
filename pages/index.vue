@@ -39,17 +39,21 @@
       <p class="mb-4 text-base-content">Pesan Anda telah disesuaikan untuk memperbaiki penyampaian.</p>
 
       <div class="p-4 mb-4 border rounded bg-base-200">
+        <span>Kepada: <span class="font-medium">{{ fullName }} ({{ phone }})</span></span>
+
+        <hr class="border-base-content/15 my-4">
+
         <p v-html="previewMessage" class="whitespace-pre-line"></p>
 
         <div class="flex gap-2 mt-8">
           <button class="btn btn-outline btn-sm gap-2" :class="{'pointer-events-none': loading}" :disabled="loadingRegenerate" @click="regenerate">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" class="w-5 fill-current" :class="{'animate-spin': loadingRegenerate}"><path d="M482-160q-134 0-228-93t-94-227v-7l-64 64-56-56 160-160 160 160-56 56-64-64v7q0 100 70.5 170T482-240q26 0 51-6t49-18l60 60q-38 22-78 33t-82 11Zm278-161L600-481l56-56 64 64v-7q0-100-70.5-170T478-720q-26 0-51 6t-49 18l-60-60q38-22 78-33t82-11q134 0 228 93t94 227v7l64-64 56 56-160 160Z"/></svg>
-            Buat Ulang
+            Regenerate
           </button>
           <button class="btn btn-outline btn-sm" :class="{'pointer-events-none': loading || loadingRegenerate}" @click="refine">Perbaiki</button>
         </div>
       </div>
-      <div class="form-control mb-4">
+      <div class="form-control mb-6">
         <label class="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" v-model="termsAccepted" class="checkbox checkbox-primary" />
           <span class="label-text">Saya menyetujui <NuxtLink to="/terms" class="text-primary hover:underline" target="_blank">Syarat dan Ketentuan</NuxtLink> serta <NuxtLink to="/privacy" class="text-primary hover:underline" target="_blank">Kebijakan Privasi</NuxtLink> Nudge</span>

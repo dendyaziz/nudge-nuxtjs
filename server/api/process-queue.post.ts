@@ -1,6 +1,6 @@
 import { defineEventHandler } from 'h3';
 import axios from 'axios';
-import { processNextQueueItem, updateQueueItemStatus, QUEUE_STATUS } from '../utils/queue';
+import { processNextQueueItem, updateQueueItemStatus, QUEUE_STATUS, cleanupOldQueueItems } from '../utils/queue';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -53,12 +53,17 @@ export default defineEventHandler(async (event) => {
         { messageId, messageServerId, timestamp }
       );
 
+      // Clean up old queue items (older than 5 minutes) after completing a queue
+      const cleanupResult = await cleanupOldQueueItems();
+      console.log('Queue cleanup result:', cleanupResult);
+
       return {
         success: true,
         message: 'Message sent successfully',
         data: {
           queueId: queueItem.id,
           topicId: queueItem.topicId,
+          cleanupResult,
           messageServerId
         }
       };

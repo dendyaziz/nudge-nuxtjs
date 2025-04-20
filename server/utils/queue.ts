@@ -212,3 +212,46 @@ export async function updateQueueItemStatus(
 
   return { success: true };
 }
+
+// Clean up old queue items (older than 5 minutes)
+export async function cleanupOldQueueItems() {
+  const db = initializeFirebaseAdmin();
+  const fiveMinutesAgo = new Timestamp(
+    Timestamp.now().seconds - 300, // 5 minutes = 300 seconds
+    Timestamp.now().nanoseconds
+  );
+
+  try {
+    // Find queue items older than 5 minutes that are completed or failed
+    // This ensures we don't delete items that are still pending or processing
+    const oldItemsQuery = await db.collection('queue')
+      .where('createdAt', '<', fiveMinutesAgo)
+      .where('status', 'in', [QUEUE_STATUS.COMPLETED, QUEUE_STATUS.FAILED])
+      .get();
+
+    if (oldItemsQuery.empty) {
+      return { success: true, message: 'No old queue items to clean up' };
+    }
+
+    // Delete old queue items
+    const batch = db.batch();
+    oldItemsQuery.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+
+    return {
+      success: true,
+      message: `Cleaned up ${oldItemsQuery.size} old queue items`,
+      count: oldItemsQuery.size
+    };
+  } catch (error: any) {
+    console.error('Error cleaning up old queue items:', error);
+    return {
+      success: false,
+      message: 'Error cleaning up old queue items',
+      error: error.message
+    };
+  }
+}
