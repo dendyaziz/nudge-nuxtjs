@@ -105,8 +105,6 @@ Refinement Instructions: \${refineInstruction}
 
     let jsonString = candidate.content.parts[0].text;
 
-    console.log(jsonString)
-
     // Clean potential markdown ```json ... ``` fences if responseMimeType didn't enforce perfectly
     jsonString = jsonString.trim().replace(/^```json\s*/, '').replace(/\s*```$/, '');
 
