@@ -34,11 +34,12 @@
             </div>
           </span>
           <span v-else-if="messageStatus === 'SENT'" class="badge badge-info">Terkirim ke server</span>
+          <span v-else-if="messageStatus === 'PENDING'" class="badge badge-outline">Mengirim...</span>
           <span v-else-if="messageStatus === 'READ'" class="badge badge-success">Dibaca</span>
           <span v-else-if="messageStatus === 'PLAYED'" class="badge badge-success">Diputar</span>
           <span v-else-if="topic?.status === 'FAILED'" class="badge badge-error">Gagal</span>
           <span v-else-if="topic?.queueStatus === 'PROCESSING'" class="badge badge-info">Sedang Diproses</span>
-          <span v-else class="badge">Tak Diketahui</span>
+          <span v-else class="badge badge-outline">Memuat...</span>
         </div>
 
         <!-- Queue information -->
