@@ -11,7 +11,7 @@ const MAX_MESSAGES_PER_USER = 3;
 const USER_MESSAGE_LIMIT_DAYS = 1;
 
 // Maximum number of messages a phone number can receive per time period
-const MAX_MESSAGES_PER_PHONE = 1;
+const MAX_MESSAGES_PER_PHONE = 2;
 // Time period for phone message limit in days
 const PHONE_MESSAGE_LIMIT_DAYS = 1;
 
@@ -119,22 +119,22 @@ export default defineEventHandler(async (event) => {
     }
 
     // Check if user has reached message limit
-    const userLimitReached = await checkUserMessageLimit(userId);
-    if (userLimitReached) {
-      return sendError(event, createError({
-        statusCode: 429,
-        statusMessage: `Batas mengirim pesan tercapai.`
-      }));
-    }
-
-    // Check if phone has reached message limit
-    const phoneLimitReached = await checkPhoneMessageLimit(standardizedPhone);
-    if (phoneLimitReached) {
-      return sendError(event, createError({
-        statusCode: 429,
-        statusMessage: `Pengiriman ke nomor ini dibatasi.`
-      }));
-    }
+    // const userLimitReached = await checkUserMessageLimit(userId);
+    // if (userLimitReached) {
+    //   return sendError(event, createError({
+    //     statusCode: 429,
+    //     statusMessage: `Batas mengirim pesan tercapai.`
+    //   }));
+    // }
+    //
+    // // Check if phone has reached message limit
+    // const phoneLimitReached = await checkPhoneMessageLimit(standardizedPhone);
+    // if (phoneLimitReached) {
+    //   return sendError(event, createError({
+    //     statusCode: 429,
+    //     statusMessage: `Pengiriman ke nomor ini dibatasi.`
+    //   }));
+    // }
 
     // Add message to queue instead of sending directly
     const queueResult = await addToQueue(topicId, standardizedPhone, message);

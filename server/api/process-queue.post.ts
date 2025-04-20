@@ -20,6 +20,9 @@ export default defineEventHandler(async (event) => {
     const clientPhone = config.whatsappClientPhone;
 
     try {
+      if (!queueItem)
+        return
+
       // Send the message to WhatsApp API
       const res = await axios.post(`${baseUrl}/send-message`, {
         phone: queueItem.phone,
