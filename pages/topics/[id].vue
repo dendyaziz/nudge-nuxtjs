@@ -53,11 +53,6 @@
           <span v-else-if="topic?.queueStatus === 'PROCESSING'" class="badge badge-info">Sedang Diproses</span>
           <span v-else class="badge badge-outline">Memuat...</span>
         </div>
-
-        <!-- Queue information -->
-        <div v-if="topic?.scheduledFor && topic?.status === 'QUEUED'" class="text-sm">
-          <span>Dijadwalkan untuk dikirim pada: {{ formatScheduledTime(topic.scheduledFor) }}</span>
-        </div>
       </div>
 
       <p v-if="!showRaw" v-html="previewMessage" class="whitespace-pre-line"></p>

@@ -9,7 +9,7 @@ const MAX_MESSAGES_PER_USER = 3;
 const USER_MESSAGE_LIMIT_DAYS = 1;
 
 // Maximum number of messages a phone number can receive per time period
-const MAX_MESSAGES_PER_PHONE = 1;
+const MAX_MESSAGES_PER_PHONE = 2;
 // Time period for phone message limit in days
 const PHONE_MESSAGE_LIMIT_DAYS = 1;
 

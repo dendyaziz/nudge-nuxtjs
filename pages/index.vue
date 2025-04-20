@@ -103,9 +103,10 @@ interface SoftenData {
 const stage = ref<'input'|'review'|'refine'>('input');
 const loading = ref(false);
 const loadingRegenerate = ref(false);
-const phone = ref('085155454174');
-const fullName = ref('Dendy');
-const rawMessage = ref('Ketek lu bau biawak');
+const runtimeConfig = useRuntimeConfig();
+const phone = ref(runtimeConfig.public.defaultPhone);
+const fullName = ref(runtimeConfig.public.defaultName);
+const rawMessage = ref(runtimeConfig.public.defaultMessage);
 const softenData = ref<SoftenData | null>(null);
 const previewMessage = ref('');
 const refineInstruction = ref('');
@@ -114,7 +115,6 @@ const termsAccepted = ref(false);
 const { user, signInWithGoogle } = useAuth();
 const router = useRouter();
 const nuxtApp = useNuxtApp();
-const runtimeConfig = useRuntimeConfig();
 const firestore = nuxtApp.$firestore as import('firebase/firestore').Firestore;
 
 onMounted(() => {
@@ -140,13 +140,28 @@ onMounted(() => {
   }
 });
 
+
+// Function to standardize phone number
+const standardizePhoneNumber = (phone: string): string | null => {
+  if (!phone) return null;
+
+  let standardizedPhone = phone.replace(/\D/g, ''); // Remove all non-digit characters
+  if (standardizedPhone.startsWith('0')) {
+    return '62' + standardizedPhone.slice(1);
+  } else if (standardizedPhone.startsWith('62')) {
+    return standardizedPhone;
+  }
+
+  return null;
+};
+
 async function continueToReview() {
   // Reset error state
   errorMessage.value = '';
 
-  // Validate phone number
-  const phoneRegex = /^(08|\+628)[0-9]{8,11}$/;
-  if (!phoneRegex.test(phone.value)) {
+  // Validate & standardize phone number
+  const standardizedPhone = standardizePhoneNumber(phone.value);
+  if (!standardizedPhone) {
     errorMessage.value = 'Nomor telepon tidak valid.';
     return;
   }
@@ -161,12 +176,15 @@ async function continueToReview() {
 
   loading.value = true;
   try {
+    if (!user.value)
+      return
+
     // First validate message limits
     const limitsRes = await $fetch('/api/validate-limits', {
       method: 'POST',
       body: {
         userId: user.value.uid,
-        phone: phone.value
+        phone: standardizedPhone
       }
     });
 
@@ -216,8 +234,15 @@ async function continueToReview() {
 }
 
 async function regenerate() {
+  // Validate & standardize phone number
+  const standardizedPhone = standardizePhoneNumber(phone.value);
+  if (!standardizedPhone) {
+    errorMessage.value = 'Nomor telepon tidak valid.';
+    return;
+  }
+
   if (!user.value) {
-    localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, termsAccepted: termsAccepted.value, stage: 'review' }));
+    localStorage.setItem('nudgeForm', JSON.stringify({ phone: standardizedPhone, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, termsAccepted: termsAccepted.value, stage: 'review' }));
     router.push('/login');
     return;
   }
@@ -301,6 +326,35 @@ async function sendMessage() {
     return;
   }
 
+  // Validate & standardize phone number
+  const standardizedPhone = standardizePhoneNumber(phone.value);
+  if (!standardizedPhone) {
+    errorMessage.value = 'Nomor telepon tidak valid.';
+    return;
+  }
+
+  // First validate message limits
+  const limitsRes = await $fetch('/api/validate-limits', {
+    method: 'POST',
+    body: {
+      userId: user.value.uid,
+      phone: standardizedPhone
+    }
+  });
+
+  // Check if user has reached message limit
+  if (limitsRes.userLimitReached) {
+    console.log('validate limits', limitsRes)
+    errorMessage.value = 'Batas mengirim pesan tercapai.';
+    return;
+  }
+
+  // Check if phone has reached message limit
+  if (limitsRes.phoneLimitReached) {
+    errorMessage.value = 'Pengiriman ke nomor ini dibatasi.';
+    return;
+  }
+
   // Reset error state
   errorMessage.value = '';
   loading.value = true;
@@ -321,7 +375,7 @@ async function sendMessage() {
     await setDoc(doc(firestore, 'topics', messageId), {
       id: messageId,
       userId: user.value.uid,
-      phone: phone.value,
+      phone: standardizedPhone,
       fullName: fullName.value,
       rawMessage: rawMessage.value,
       softenData: JSON.stringify(softenData.value),
@@ -333,7 +387,7 @@ async function sendMessage() {
     const res = await $fetch('/api/send-whatsapp', {
       method: 'POST',
       body: {
-        phone: phone.value,
+        phone: standardizedPhone,
         message,
         topicId: messageId
       }

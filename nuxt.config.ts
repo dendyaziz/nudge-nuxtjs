@@ -25,7 +25,10 @@ export default defineNuxtConfig({
         storageBucket: process.env.NUXT_ENV_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
         messagingSenderId: process.env.NUXT_ENV_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
         appId: process.env.NUXT_ENV_PUBLIC_FIREBASE_APP_ID || ''
-      }
+      },
+      defaultPhone: process.env.NUXT_ENV_DEFAULT_PHONE || '',
+      defaultName: process.env.NUXT_ENV_DEFAULT_NAME || '',
+      defaultMessage: process.env.NUXT_ENV_DEFAULT_MESSAGE || ''
     }
   },
 
