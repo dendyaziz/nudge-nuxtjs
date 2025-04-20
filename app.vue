@@ -22,18 +22,10 @@
 
 <script setup>
 import { useAuth } from '~/composables/useAuth';
-import { useRouter } from 'vue-router';
 const { user, signOut, signInWithGoogle } = useAuth();
-
-const router = useRouter();
-
-watch(() => user, () => {
-  console.log('updated 2', user)
-})
 
 async function login() {
   await signInWithGoogle();
-  // navigateTo('/', { external: true });
 }
 
 async function logout() {

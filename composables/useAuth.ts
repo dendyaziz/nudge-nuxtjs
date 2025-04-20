@@ -5,16 +5,15 @@ import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut as fbS
 export function useAuth() {
   const nuxtApp = useNuxtApp();
   const auth = nuxtApp.$auth as import('firebase/auth').Auth;
-  const user = useState<User | null>('user', () => null);
+  const user = ref<User | null>(null);
 
   onAuthStateChanged(auth, (u) => {
-    console.log('updated 1', u)
     user.value = u;
   });
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    return await signInWithPopup(auth, provider);
   };
 
   const signOut = async () => {

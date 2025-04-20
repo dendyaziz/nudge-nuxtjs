@@ -15,7 +15,8 @@
         <textarea v-model="rawMessage" class="textarea textarea-bordered" placeholder="Type your message here"></textarea>
       </div>
       <button class="btn btn-primary w-full" :disabled="!phone || !fullName || !rawMessage || loading" @click="continueToReview">
-        Continue
+        <span v-if="user">Continue</span>
+        <span v-else>Login and Continue</span>
       </button>
     </div>
     <div v-else-if="stage === 'review'">
@@ -107,8 +108,9 @@ async function continueToReview() {
   if (!user.value) {
     localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, stage: 'review' }));
     await signInWithGoogle();
-    navigateTo('/', { external: true });
-    return;
+
+    if (!user)
+      return
   }
 
   loading.value = true;
