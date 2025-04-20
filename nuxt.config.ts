@@ -56,5 +56,16 @@ export default defineNuxtConfig({
     cssPath: '~/assets/css/tailwind.css'
   },
 
+  app: {
+    head: {
+      link: [
+        {
+          rel: 'icon',
+          href: '/favicon.ico?v=2',
+        },
+      ],
+    },
+  },
+
   compatibilityDate: '2025-04-20'
 });

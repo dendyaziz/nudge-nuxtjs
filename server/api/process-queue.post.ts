@@ -63,7 +63,6 @@ export default defineEventHandler(async (event) => {
         data: {
           queueId: queueItem.id,
           topicId: queueItem.topicId,
-          cleanupResult,
           messageServerId
         }
       };
