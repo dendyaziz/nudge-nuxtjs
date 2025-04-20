@@ -1,49 +1,58 @@
 <template>
   <div class="max-w-md mx-auto p-4">
     <!-- Debug button: test Firestore connectivity -->
-    <button v-if="false" class="btn btn-secondary w-full mb-4" @click="testFirestore()">Test Firestore</button>
+    <button v-if="false" class="btn btn-secondary w-full mb-4" @click="testFirestore()">Uji Firestore</button>
     <div v-if="stage === 'input'">
-      <h1 class="text-2xl font-bold mb-4">Send a New Nudge</h1>
+      <h1 class="text-2xl font-bold mb-4">Kirim Pesan Anonim</h1>
       <div class="form-control mb-4">
-        <label class="label"><span class="label-text">WhatsApp Number</span></label>
-        <input v-model="phone" type="text" class="input input-bordered" placeholder="e.g. 628123456789" />
+        <label class="label"><span class="label-text">Nomor WhatsApp</span></label>
+        <input v-model="phone" type="text" class="input input-bordered" placeholder="contoh: 08123456789" />
       </div>
       <div class="form-control mb-4">
-        <label class="label"><span class="label-text">Full Name</span></label>
-        <input v-model="fullName" type="text" class="input input-bordered" placeholder="Full Name of the person" />
+        <label class="label"><span class="label-text">Nama Lengkap</span></label>
+        <input v-model="fullName" type="text" class="input input-bordered" placeholder="Nama Lengkap orang tersebut" />
       </div>
       <div class="form-control mb-4">
-        <label class="label"><span class="label-text">Message</span></label>
-        <textarea v-model="rawMessage" class="textarea textarea-bordered" placeholder="Type your message here"></textarea>
+        <label class="label"><span class="label-text">Pesan</span></label>
+        <textarea v-model="rawMessage" class="textarea textarea-bordered" placeholder="Ketik pesan Anda di sini"></textarea>
       </div>
       <button class="btn btn-primary w-full" :disabled="!phone || !fullName || !rawMessage || loading" @click="continueToReview">
-        <span v-if="user">Continue</span>
-        <span v-else>Login and Continue</span>
+        <span v-if="user">Lanjutkan</span>
+        <span v-else>Masuk dan Lanjutkan</span>
       </button>
     </div>
     <div v-else-if="stage === 'review'">
-      <h1 class="text-2xl font-bold mb-4">Review Softened Message</h1>
+      <h1 class="text-2xl font-bold mb-2">Tinjau Pesan</h1>
+
+      <p class="mb-4 text-base-content">Pesan Anda telah disesuaikan untuk mempermudah penyampaian.</p>
+
       <div class="p-4 mb-4 border rounded bg-base-200">
         <p v-html="previewMessage" class="whitespace-pre-line"></p>
+
+        <div class="flex gap-2 mt-8">
+          <button class="btn btn-outline btn-sm gap-2" :class="{'pointer-events-none': loading}" :disabled="loadingRegenerate" @click="regenerate">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" class="w-5 fill-current" :class="{'animate-spin': loadingRegenerate}"><path d="M482-160q-134 0-228-93t-94-227v-7l-64 64-56-56 160-160 160 160-56 56-64-64v7q0 100 70.5 170T482-240q26 0 51-6t49-18l60 60q-38 22-78 33t-82 11Zm278-161L600-481l56-56 64 64v-7q0-100-70.5-170T478-720q-26 0-51 6t-49 18l-60-60q38-22 78-33t82-11q134 0 228 93t94 227v7l64-64 56 56-160 160Z"/></svg>
+            Buat Ulang
+          </button>
+          <button class="btn btn-outline btn-sm" :class="{'pointer-events-none': loading || loadingRegenerate}" @click="refine">Perbaiki</button>
+        </div>
       </div>
       <div class="flex gap-2">
-        <button class="btn btn-outline" :disabled="loading" @click="regenerate">Regenerate</button>
-        <button class="btn btn-outline" @click="refine">Refine</button>
-        <button class="btn btn-primary ml-auto" :disabled="loading" @click="sendMessage">Send</button>
+        <button class="btn btn-primary ml-auto" :class="{'pointer-events-none': loadingRegenerate}" :disabled="loading" @click="sendMessage">Kirim Pesan</button>
       </div>
     </div>
     <div v-else-if="stage === 'refine'">
-      <h1 class="text-2xl font-bold mb-4">Refine Message</h1>
+      <h1 class="text-2xl font-bold mb-4">Perhalus Pesan</h1>
       <div class="p-4 mb-2 border rounded bg-base-200">
         <p v-html="previewMessage" class="whitespace-pre-line"></p>
       </div>
       <div class="form-control mb-4">
-        <label class="label"><span class="label-text">What to add?</span></label>
-        <input v-model="refineInstruction" type="text" class="input input-bordered" placeholder="e.g. be more polite" />
+        <label class="label"><span class="label-text">Apa yang ingin ditambahkan?</span></label>
+        <input v-model="refineInstruction" type="text" class="input input-bordered" placeholder="contoh: lebih sopan" />
       </div>
       <div class="flex justify-between">
-        <button class="btn btn-outline" @click="cancelRefine">Cancel</button>
-        <button class="btn btn-primary" :disabled="!refineInstruction || loading" @click="submitRefine">Refine</button>
+        <button class="btn btn-outline" @click="cancelRefine">Batal</button>
+        <button class="btn btn-primary" :disabled="!refineInstruction || loading" @click="submitRefine">Perbaiki Pesan</button>
       </div>
     </div>
   </div>
@@ -73,7 +82,8 @@ interface SoftenData {
 
 const stage = ref<'input'|'review'|'refine'>('input');
 const loading = ref(false);
-const phone = ref('6285155454174');
+const loadingRegenerate = ref(false);
+const phone = ref('085155454174');
 const fullName = ref('Dendy');
 const rawMessage = ref('Ketek lu bau biawak');
 const softenData = ref<SoftenData | null>(null);
@@ -136,7 +146,7 @@ async function continueToReview() {
     }
   } catch (error) {
     console.error('Error calling API:', error);
-    previewMessage.value = 'An error occurred while processing your request.';
+    previewMessage.value = 'Terjadi kesalahan saat memproses permintaan Anda.';
   } finally {
     loading.value = false;
   }
@@ -149,7 +159,7 @@ async function regenerate() {
     return;
   }
 
-  loading.value = true;
+  loadingRegenerate.value = true;
   try {
     const res = await $fetch<Response<SoftenData>>('/api/soften', { method: 'POST', body: { message: rawMessage.value, fullName: fullName.value } });
 
@@ -169,9 +179,9 @@ async function regenerate() {
     }
   } catch (error) {
     console.error('Error calling API:', error);
-    previewMessage.value = 'An error occurred while processing your request.';
+    previewMessage.value = 'Terjadi kesalahan saat memproses permintaan Anda.';
   } finally {
-    loading.value = false;
+    loadingRegenerate.value = false;
   }
 }
 
@@ -214,7 +224,7 @@ async function submitRefine() {
     }
   } catch (error) {
     console.error('Error calling API:', error);
-    previewMessage.value = 'An error occurred while processing your request.';
+    previewMessage.value = 'Terjadi kesalahan saat memproses permintaan Anda.';
   } finally {
     loading.value = false;
   }

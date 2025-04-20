@@ -1,13 +1,13 @@
 <template>
   <div class="max-w-md mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-4">Message to {{ topic?.fullName }}</h1>
+    <h1 class="text-2xl font-bold mb-4">Pesan untuk {{ topic?.fullName }}</h1>
     <div class="p-4 mb-4 border rounded bg-base-200">
       <p v-if="!showRaw" v-html="previewMessage" class="whitespace-pre-line"></p>
       <p v-else>{{ topic?.rawMessage }}</p>
+      <button class="btn btn-outline btn-sm mt-8" @click="showRaw = !showRaw">
+        {{ showRaw ? 'Sembunyikan' : 'Tampilkan' }} Pesan Asli
+      </button>
     </div>
-    <button class="btn mb-4" @click="showRaw = !showRaw">
-      {{ showRaw ? 'Hide' : 'Show' }} Original Message
-    </button>
     <p v-if="showRaw" class="text-gray-500 mb-4">{{ topic?.rawMessage }}</p>
     <p><strong>Status:</strong> {{ topic?.status }}</p>
   </div>
