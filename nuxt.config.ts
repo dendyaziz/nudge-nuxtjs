@@ -1,6 +1,25 @@
 export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss'],
 
+  app: {
+    head: {
+      title: 'Nudge - Cara Baru Untuk Peduli',
+      meta: [
+        { name: 'description', content: 'Nudge adalah platform inovatif yang memudahkan Anda untuk peduli dan berbagi dengan orang lain melalui pesan WhatsApp yang bermakna. Hubungkan, inspirasi, dan buat perubahan positif hari ini.' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { property: 'og:title', content: 'Nudge - Cara Baru Untuk Peduli' },
+        { property: 'og:description', content: 'Nudge adalah platform inovatif yang memudahkan Anda untuk peduli dan berbagi dengan orang lain melalui pesan WhatsApp yang bermakna. Hubungkan, inspirasi, dan buat perubahan positif hari ini.' },
+        { property: 'og:url', content: process.env.NUXT_ENV_PUBLIC_APP_URL || 'https://www.nudge.web.id' },
+        { property: 'og:type', content: 'website' },
+        { name: 'twitter:title', content: 'Nudge - Cara Baru Untuk Peduli' },
+        { name: 'twitter:description', content: 'Nudge adalah platform inovatif yang memudahkan Anda untuk peduli dan berbagi dengan orang lain melalui pesan WhatsApp yang bermakna. Hubungkan, inspirasi, dan buat perubahan positif hari ini.' },
+      ],
+      link: [
+        { rel: 'canonical', href: process.env.NUXT_ENV_PUBLIC_APP_URL || 'https://www.nudge.web.id' }
+      ]
+    }
+  },
+
   runtimeConfig: {
     firebase: {
       apiKey: process.env.NUXT_ENV_PUBLIC_FIREBASE_API_KEY || '',
@@ -26,6 +45,7 @@ export default defineNuxtConfig({
         messagingSenderId: process.env.NUXT_ENV_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
         appId: process.env.NUXT_ENV_PUBLIC_FIREBASE_APP_ID || ''
       },
+      baseUrl: process.env.NUXT_ENV_PUBLIC_APP_URL || 'https://www.nudge.web.id',
       defaultPhone: process.env.NUXT_ENV_DEFAULT_PHONE || '',
       defaultName: process.env.NUXT_ENV_DEFAULT_NAME || '',
       defaultMessage: process.env.NUXT_ENV_DEFAULT_MESSAGE || ''
