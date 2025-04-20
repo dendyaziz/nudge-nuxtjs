@@ -11,6 +11,7 @@ export const QUEUE_STATUS = {
 
 // Message status constants
 export const MESSAGE_STATUS = {
+  PENDING: 'PENDING',
   QUEUED: 'QUEUED',
   SENT: 'SENT',
   DELIVERED: 'DELIVERED',
@@ -196,10 +197,10 @@ export async function updateQueueItemStatus(
     updatedAt: FieldValue.serverTimestamp()
   };
 
-  // If message was sent successfully, update with message server ID
+  // If the message has been requested to send successfully, update the status to PENDING with message server ID
   if (status === QUEUE_STATUS.COMPLETED && messageData) {
     topicUpdateData.messageServerId = messageData.messageServerId;
-    topicUpdateData.status = MESSAGE_STATUS.SENT;
+    topicUpdateData.status = MESSAGE_STATUS.PENDING;
   } else if (status === QUEUE_STATUS.FAILED) {
     topicUpdateData.status = MESSAGE_STATUS.FAILED;
     if (error) {

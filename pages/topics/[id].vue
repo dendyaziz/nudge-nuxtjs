@@ -158,6 +158,14 @@ async function fetchMessageStatus(messageId: string) {
         const docRef = doc(firestore, 'topics', topic.value.id);
         await updateDoc(docRef, { status: response.data.status });
         console.log('Updated topic status in Firebase:', response.data.status);
+
+        if (response.data.status === 'PENDING') {
+          console.log('starting timeout')
+          setTimeout(async () => {
+            console.log('execute timeout')
+            await fetchMessageStatus(messageId)
+          }, 1000)
+        }
       }
     } else {
       messageStatus.value = 'Error';
@@ -232,8 +240,10 @@ onMounted(async () => {
           const newData = doc.data();
           topic.value = newData;
 
+          console.log('newData.status', newData.status)
+
           // If status changed to SENT or PENDING, fetch the message status
-          if ((newData.status === 'SENT' || newData.status === 'PENDING') && newData.messageServerId) {
+          if ((newData.status === 'PENDING') && newData.messageServerId) {
             fetchMessageStatus(newData.messageServerId);
           }
         }
