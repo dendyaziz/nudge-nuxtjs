@@ -1,13 +1,13 @@
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { H3Event, createError, getQuery } from 'h3';
+import { initializeFirebaseAdmin } from '../utils/firestore-admin';
 
 // Initialize Firebase Admin Auth
 export function initializeFirebaseAdminAuth() {
   // Ensure Firebase Admin is initialized
   if (getApps().length === 0) {
     // This will initialize the app using the same logic as in firestore-admin.ts
-    const { initializeFirebaseAdmin } = require('./firestore-admin');
     initializeFirebaseAdmin();
   }
 
