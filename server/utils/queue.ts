@@ -47,6 +47,7 @@ export async function addToQueue(topicId: string, phone: string, message: string
 
   // Calculate scheduled time
   let scheduledFor = now;
+
   if (!pendingQuery.empty) {
     // If there are pending items, schedule this one for 1 minute after the last one
     const lastPending = pendingQuery.docs[pendingQuery.docs.length - 1].data();
@@ -54,6 +55,32 @@ export async function addToQueue(topicId: string, phone: string, message: string
       lastPending.scheduledFor.seconds + 60,
       lastPending.scheduledFor.nanoseconds
     );
+  } else {
+    // No pending items, check when the last message was processed
+    const lastProcessedQuery = await db.collection('queue')
+      .where('status', '==', QUEUE_STATUS.COMPLETED)
+      .orderBy('processedAt', 'desc')
+      .limit(1)
+      .get();
+
+    if (!lastProcessedQuery.empty) {
+      const lastProcessed = lastProcessedQuery.docs[0].data();
+      const lastProcessedTime = lastProcessed.processedAt;
+
+      // Check if the last message was processed less than a minute ago
+      const oneMinuteAgo = new Timestamp(now.seconds - 60, now.nanoseconds);
+
+      if (lastProcessedTime && lastProcessedTime.seconds > oneMinuteAgo.seconds) {
+        // Last message was processed less than a minute ago
+        // Schedule this one for 1 minute after the last processed message
+        scheduledFor = new Timestamp(
+          lastProcessedTime.seconds + 60,
+          lastProcessedTime.nanoseconds
+        );
+      }
+      // Otherwise, if it was processed more than a minute ago, keep scheduledFor as now
+    }
+    // If no messages have been processed yet, keep scheduledFor as now
   }
 
   // Create a new queue item
