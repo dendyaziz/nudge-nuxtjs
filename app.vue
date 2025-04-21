@@ -12,7 +12,7 @@
           <button @click="logout" class="btn btn-ghost">Keluar</button>
         </div>
         <div v-else>
-          <button @click="login" class="btn btn-primary">Masuk dengan Google</button>
+          <button @click="login" class="btn btn-primary">Login dengan Google</button>
         </div>
       </div>
     </div>

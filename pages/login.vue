@@ -1,6 +1,6 @@
 <template>
   <div class="h-screen flex items-center justify-center">
-    <button class="btn btn-primary" @click="login">Masuk dengan Google</button>
+    <button class="btn btn-primary" @click="login">Login dengan Google</button>
   </div>
 </template>
 

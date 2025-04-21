@@ -27,7 +27,7 @@
       </div>
       <button class="btn btn-primary w-full" :disabled="!phone || !fullName || !rawMessage || loading" @click="continueToReview">
         <span v-if="user">Lanjutkan</span>
-        <span v-else>Masuk dan Lanjutkan</span>
+        <span v-else>Login dan Lanjutkan</span>
       </button>
     </div>
     <div v-else-if="stage === 'review'">
