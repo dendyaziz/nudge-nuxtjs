@@ -85,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useAuth } from '~/composables/useAuth';
 import { useRouter } from 'vue-router';
 import { useNuxtApp, useRuntimeConfig } from '#app';
@@ -125,6 +125,11 @@ const router = useRouter();
 const nuxtApp = useNuxtApp();
 const firestore = nuxtApp.$firestore as import('firebase/firestore').Firestore;
 const { trackEvent } = useAnalytics();
+
+// Watch for changes in terms acceptance and track them
+watch(termsAccepted, (newValue) => {
+  trackEvent('terms_checkbox_change', { accepted: newValue });
+});
 
 onMounted(() => {
   const saved = localStorage.getItem('nudgeForm');
