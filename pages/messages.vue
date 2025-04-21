@@ -45,7 +45,7 @@
     <div v-if="totalPages > 1" class="flex justify-center mt-4">
       <div class="btn-group">
         <button
-          class="btn"
+          class="btn btn-primary"
           :class="{ 'btn-disabled': currentPage === 1 }"
           @click="changePage(currentPage - 1)"
           :disabled="currentPage === 1"
@@ -55,14 +55,14 @@
 
         <button v-for="page in paginationRange" :key="page"
           class="btn"
-          :class="{ 'btn-active': page === currentPage }"
+          :class="{ 'btn-primary': page !== currentPage, 'btn-accent': page === currentPage }"
           @click="changePage(page)"
         >
           {{ page }}
         </button>
 
         <button
-          class="btn"
+          class="btn btn-primary"
           :class="{ 'btn-disabled': currentPage === totalPages }"
           @click="changePage(currentPage + 1)"
           :disabled="currentPage === totalPages"
@@ -88,7 +88,7 @@ const messages = ref<any[]>([]);
 const loading = ref(true);
 const currentPage = ref(1);
 const totalPages = ref(1);
-const messagesPerPage = 1;
+const messagesPerPage = 10;
 const lastVisible = ref<any>(null);
 const allDocuments = ref<any[]>([]);
 
