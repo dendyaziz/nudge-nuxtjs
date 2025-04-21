@@ -57,7 +57,7 @@
 
       <p v-if="!showRaw" v-html="previewMessage" class="whitespace-pre-line"></p>
       <p v-else>{{ topic?.rawMessage }}</p>
-      <button class="btn btn-outline btn-sm mt-8" @click="showRaw = !showRaw">
+      <button class="btn btn-outline btn-sm mt-8" @click="toggleRawMessage">
         {{ showRaw ? 'Sembunyikan' : 'Tampilkan' }} Pesan Asli
       </button>
     </div>
@@ -75,6 +75,7 @@ import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useNuxtApp } from '#app';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Timestamp } from 'firebase/firestore';
+import { useAnalytics } from '~/composables/useAnalytics';
 
 const route = useRoute();
 const topic = ref<any>(null);
@@ -82,6 +83,17 @@ const showRaw = ref(false);
 const messageStatus = ref<string>('');
 const messageStatusError = ref<string | null>(null);
 const statusCheckInterval = ref<number | null>(null);
+const { trackEvent } = useAnalytics();
+
+// Function to toggle raw message display with analytics tracking
+function toggleRawMessage() {
+  const newState = !showRaw.value;
+  trackEvent('toggle_raw_message', {
+    topicId: route.params.id,
+    action: newState ? 'show' : 'hide'
+  });
+  showRaw.value = newState;
+}
 
 // Function to format scheduled time for display
 function formatScheduledTime(timestamp: any): string {
@@ -200,7 +212,16 @@ function stopStatusPolling() {
 }
 
 // Watch for changes in messageStatus
-watch(messageStatus, (newStatus) => {
+watch(messageStatus, (newStatus, oldStatus) => {
+  if (newStatus && newStatus !== oldStatus) {
+    // Track status change
+    trackEvent('message_status_change', {
+      topicId: route.params.id,
+      oldStatus: oldStatus || 'none',
+      newStatus
+    });
+  }
+
   if (newStatus === 'PENDING') {
     startStatusPolling();
   } else if (statusCheckInterval.value !== null) {
@@ -218,6 +239,13 @@ onMounted(async () => {
   const snap = await getDoc(docRef);
   if (snap.exists()) {
     topic.value = snap.data();
+
+    // Track topic view with initial status
+    trackEvent('topic_view', {
+      topicId: id,
+      initialStatus: topic.value.status || 'unknown',
+      hasMessageServerId: !!topic.value.messageServerId
+    });
 
     // Fetch message status from the API if messageServerId exists and status is not QUEUED
     if (topic.value.messageServerId && topic.value.status !== 'QUEUED') {

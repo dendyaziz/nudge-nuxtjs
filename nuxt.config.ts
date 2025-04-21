@@ -27,7 +27,8 @@ export default defineNuxtConfig({
       projectId: process.env.NUXT_ENV_PUBLIC_FIREBASE_PROJECT_ID || '',
       storageBucket: process.env.NUXT_ENV_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
       messagingSenderId: process.env.NUXT_ENV_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
-      appId: process.env.NUXT_ENV_PUBLIC_FIREBASE_APP_ID || ''
+      appId: process.env.NUXT_ENV_PUBLIC_FIREBASE_APP_ID || '',
+      measurementId: process.env.NUXT_ENV_PUBLIC_FIREBASE_MEASUREMENT_ID || '',
     },
     // Firebase Admin SDK credentials for server-side operations
     firebaseAdminCredentials: process.env.NUXT_ENV_FIREBASE_ADMIN_CREDENTIALS || '',
@@ -43,7 +44,8 @@ export default defineNuxtConfig({
         projectId: process.env.NUXT_ENV_PUBLIC_FIREBASE_PROJECT_ID || '',
         storageBucket: process.env.NUXT_ENV_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
         messagingSenderId: process.env.NUXT_ENV_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
-        appId: process.env.NUXT_ENV_PUBLIC_FIREBASE_APP_ID || ''
+        appId: process.env.NUXT_ENV_PUBLIC_FIREBASE_APP_ID || '',
+        measurementId: process.env.NUXT_ENV_PUBLIC_FIREBASE_MEASUREMENT_ID || '',
       },
       baseUrl: process.env.NUXT_ENV_PUBLIC_APP_URL || 'https://www.nudge.web.id',
       defaultPhone: process.env.NUXT_ENV_DEFAULT_PHONE || '',

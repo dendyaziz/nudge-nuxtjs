@@ -91,6 +91,7 @@ import { useRouter } from 'vue-router';
 import { useNuxtApp, useRuntimeConfig } from '#app';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp, enableNetwork } from 'firebase/firestore';
 import {createError, sendError} from "h3";
+import { useAnalytics } from '~/composables/useAnalytics';
 
 // Define the type for the API response
 interface Response<T> {
@@ -123,6 +124,7 @@ const { user, signInWithGoogle } = useAuth();
 const router = useRouter();
 const nuxtApp = useNuxtApp();
 const firestore = nuxtApp.$firestore as import('firebase/firestore').Firestore;
+const { trackEvent } = useAnalytics();
 
 onMounted(() => {
   const saved = localStorage.getItem('nudgeForm');
@@ -166,10 +168,14 @@ async function continueToReview() {
   // Reset error state
   errorMessage.value = '';
 
+  // Track event
+  trackEvent('form_continue_to_review_attempt');
+
   // Validate & standardize phone number
   const standardizedPhone = standardizePhoneNumber(phone.value);
   if (!standardizedPhone) {
     errorMessage.value = 'Nomor telepon tidak valid.';
+    trackEvent('form_validation_error', { error_type: 'invalid_phone' });
     return;
   }
 
@@ -241,15 +247,20 @@ async function continueToReview() {
 }
 
 async function regenerate() {
+  // Track event
+  trackEvent('regenerate_message_attempt');
+
   // Validate & standardize phone number
   const standardizedPhone = standardizePhoneNumber(phone.value);
   if (!standardizedPhone) {
     errorMessage.value = 'Nomor telepon tidak valid.';
+    trackEvent('form_validation_error', { error_type: 'invalid_phone', stage: 'regenerate' });
     return;
   }
 
   if (!user.value) {
     localStorage.setItem('nudgeForm', JSON.stringify({ phone: standardizedPhone, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, termsAccepted: termsAccepted.value, stage: 'review' }));
+    trackEvent('regenerate_message_redirect_to_login');
     router.push('/login');
     return;
   }
@@ -280,11 +291,26 @@ async function regenerate() {
   }
 }
 
-function refine() { stage.value = 'refine'; }
-function cancelRefine() { refineInstruction.value = ''; stage.value = 'review'; }
-function goBackToInput() { stage.value = 'input'; }
+function refine() {
+  trackEvent('refine_message_click');
+  stage.value = 'refine';
+}
+
+function cancelRefine() {
+  trackEvent('cancel_refine');
+  refineInstruction.value = '';
+  stage.value = 'review';
+}
+
+function goBackToInput() {
+  trackEvent('go_back_to_input');
+  stage.value = 'input';
+}
 
 async function submitRefine() {
+  // Track event
+  trackEvent('submit_refine_attempt', { instruction: refineInstruction.value });
+
   loading.value = true;
   try {
     // Use the new refine endpoint with refineInstruction and softenData
@@ -327,8 +353,12 @@ async function submitRefine() {
 }
 
 async function sendMessage() {
+  // Track event
+  trackEvent('send_message_attempt');
+
   if (!user.value) {
     localStorage.setItem('nudgeForm', JSON.stringify({ phone: phone.value, fullName: fullName.value, rawMessage: rawMessage.value, softenData: JSON.stringify(softenData.value), refineInstruction: refineInstruction.value, termsAccepted: termsAccepted.value, stage: 'review' }));
+    trackEvent('send_message_redirect_to_login');
     router.push('/login');
     return;
   }
@@ -337,6 +367,7 @@ async function sendMessage() {
   const standardizedPhone = standardizePhoneNumber(phone.value);
   if (!standardizedPhone) {
     errorMessage.value = 'Nomor telepon tidak valid.';
+    trackEvent('form_validation_error', { error_type: 'invalid_phone', stage: 'send_message' });
     return;
   }
 
@@ -410,9 +441,20 @@ async function sendMessage() {
       });
     }
 
+    // Track successful message sending
+    trackEvent('message_sent_success', {
+      messageId,
+      hasRefinement: !!refineInstruction.value
+    });
+
     router.push(`/topics/${messageId}`);
   } catch (error: any) {
     console.error('Error sending message:', error);
+
+    // Track error
+    trackEvent('message_sent_error', {
+      error: error.response?._data?.statusMessage || 'unknown_error'
+    });
 
     // Check if the error has a response with a status message
     if (error.response && error.response._data && error.response._data.statusMessage) {
