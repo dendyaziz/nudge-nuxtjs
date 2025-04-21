@@ -9,7 +9,7 @@
         <div class="navbar bg-base-100 shadow-md mb-4">
           <div class="flex-1">
             <NuxtLink to="/" class="btn btn-ghost normal-case text-xl">
-              <img src="@/assets/img/logo-w-label.png" alt="Logo" class="h-10">
+              <img src="@/assets/img/logo-w-label.png" alt="Logo" class="h-10 -ml-2">
             </NuxtLink>
 
             <!-- Mobile menu button - only visible on small screens -->
