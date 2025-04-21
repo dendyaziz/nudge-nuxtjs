@@ -67,6 +67,9 @@ export default defineEventHandler(async (event) => {
         }
       };
     } catch (err: any) {
+      if (!queueItem)
+        return
+
       // Update queue item status to failed
       await updateQueueItemStatus(
         queueItem.id,

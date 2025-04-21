@@ -15,9 +15,13 @@ export default defineNuxtConfig({
         { name: 'twitter:description', content: 'Nudge adalah platform inovatif yang memudahkan Anda untuk peduli dan berbagi dengan orang lain melalui pesan untuk membuat perubahan positif hari ini.' },
       ],
       link: [
-        { rel: 'canonical', href: process.env.NUXT_ENV_PUBLIC_APP_URL || 'https://www.nudge.web.id' }
-      ]
-    }
+        { rel: 'canonical', href: process.env.NUXT_ENV_PUBLIC_APP_URL || 'https://www.nudge.web.id' },
+        {
+          rel: 'icon',
+          href: '/favicon.ico?v=2',
+        },
+      ],
+    },
   },
 
   runtimeConfig: {
@@ -56,17 +60,6 @@ export default defineNuxtConfig({
 
   tailwindcss: {
     cssPath: '~/assets/css/tailwind.css'
-  },
-
-  app: {
-    head: {
-      link: [
-        {
-          rel: 'icon',
-          href: '/favicon.ico?v=2',
-        },
-      ],
-    },
   },
 
   compatibilityDate: '2025-04-20'
