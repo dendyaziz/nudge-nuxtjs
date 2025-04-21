@@ -29,7 +29,7 @@
               <!-- User dropdown -->
               <div class="dropdown dropdown-end">
                 <label tabindex="0" class="btn btn-ghost avatar gap-3">
-                  <div class="w-10 rounded-full">
+                  <div class="w-9 rounded-full">
                     <img v-if="user.photoURL" :src="user.photoURL" alt="Profile" />
                     <div v-else class="bg-primary text-primary-content flex items-center justify-center h-full">
                       {{ user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U' }}
