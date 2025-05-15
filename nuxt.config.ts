@@ -54,7 +54,7 @@ export default defineNuxtConfig({
     // Firebase Admin SDK credentials for server-side operations
     firebaseAdminCredentials: process.env.NUXT_ENV_FIREBASE_ADMIN_CREDENTIALS || '',
     geminiApiKey: process.env.NUXT_ENV_GEMINI_API_KEY || '',
-    whatsappBaseUrl: 'https://whatsapp-bot.hust.sale',
+    whatsappBaseUrl: 'https://whatsapp-bot.nudge.web.id',
     whatsappClientPhone: process.env.NUXT_ENV_WHATSAPP_CLIENT_PHONE || '',
     // Secret token for cron job authentication
     cronSecretToken: process.env.NUXT_ENV_CRON_SECRET_TOKEN || 'default-cron-secret-for-development',
